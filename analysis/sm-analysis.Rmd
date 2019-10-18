@@ -1,0 +1,140 @@
+---
+title: "Underwater Homes Analysis"
+author: "TBD"
+date: "10/16/2019"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, paged.print=TRUE)
+```
+## Load Packages
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(readxl)
+library(zipcode)
+library(maps)
+```
+
+## Load and Clean Data
+
+From Connie Ford:
+
+CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Think data is Q1 2019, but not sure. 
+
+```{r}
+
+# Load and clean data by fixing zip codes to add a leading zero for northeastern zip codes
+underwater <- read_xlsx("../data/input_data/corelogic_underwater_homes.xlsx") %>%
+  clean_names() %>%
+  mutate(zip_code = clean.zipcodes(zip_code))
+
+```
+
+## Examine the Data
+
+High concentrations of negative equity in Connecticut, New Jersey and Maryland.
+
+```{r}
+
+underwater %>%
+  filter(!is.na(share_of_homes_in_negative_equity)) %>%
+  group_by(state_name) %>%
+  summarise(mean_pct_underwater = mean(share_of_homes_in_negative_equity)*100) %>%
+  arrange(desc(mean_pct_underwater))
+
+```
+
+```{r}
+
+underwater %>%
+  filter(!is.na(share_of_homes_in_negative_equity)) %>%
+  filter(state_name == "Maryland") %>%
+  group_by(state_name, county_name) %>%
+  summarise(mean_pct_underwater = mean(share_of_homes_in_negative_equity)*100) %>%
+  arrange(desc(mean_pct_underwater))
+
+```
+
+```{r}
+
+```
+
+Initial Tasks (By end of October)
+
+SEAN WILL WORK ON THIS Generate an exploratory map with CoreLogic percentage underwater data and give to Connie.  
+
+LUCIANA Begin descriptive demographic analysis to describe what high underwater communities have in common and create a memo for Connie. Are there any discernible patterns that bind high underwater and low underwater communities together.  
+* Is there a racial disparity? U.S Census data. Percent non-white. 
+* Is there an income disparity - median household income -- are these places generally poorer (povery rate) are richer? U.S. Census
+* Is there an age difference? Median Age U.S. Census
+* Is there a difference in the type and quality of mortgages and loans people have? Not sure where to get this yet.
+* Is there an education difference? 
+* Is there a difference between housing quality?
+* Is there something we can tie it default rates? Or foreclosures? 
+* Is it related to the overall performance of the housing market? Did housing get really expensive here? https://www.fhfa.gov/DataTools/Downloads/Pages/House-Price-Index-Datasets.aspx https://www.fhfa.gov/DataTools/Downloads/Documents/HPI/HPI_AT_BDL_ZIP5.xlsx
+
+STEPS
+1. Get census data with four columns: five digit zipcode, percent non-white, median household income, poverty rate. 
+2. Do an inner join between census data and underwater data
+3. Clean it up until we have the columns we want. 
+4. Try to figure out if there's a general pattern where highest underwater rates are poorest or non-white majority or lower median household income. 
+  - sort and see if the highest underwater rates at top have also lowest or highest demographic features. Or sort by demographics. 
+  - filter out just the top 10 and see if there's a pattern there. 
+  - the above will be espeically useful in identifying good examples. 
+5. Cacluate a statistical measure of the relationship between underwater rates and demographic variables. 
+  - Pearson correlation coefficient also known as r.  -1 to 1. With 1 it's a perfect positive correlation or relationship. With -1 it's a perfect negative correlation or relationship and 0 is none. 
+
+## Getting census data
+
+https://data.census.gov/cedsci/
+https://factfinder.census.gov/faces/nav/jsf/pages/index.xhtml
+The most recent ACS 5-year estimates
+https://github.com/walkerke/tidycensus
+https://walkerke.github.io/tidycensus/articles/basic-usage.html#searching-for-variables
+
+```{r}
+library(tmap)
+```
+
+# Maps made in plot mode
+
+```{r}
+tmap_mode("plot")
+data(World)
+tm_shape(World) +
+  tm_polygons("HPI")
+```
+# Maps made in view mode
+
+
+
+tmap_mode("view")
+data(World)
+tm_shape(World) +
+  tm_polygons("HPI", id = "iso_a3", popup.vars = TRUE)
+
+```{r}
+library(tidycensus)
+options(tigris_use_cache = TRUE)
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+orange <- get_acs(geography = "zcta", 
+                  variables = "B19013_001", geometry = TRUE)
+
+head(orange)
+
+orange %>%
+  ggplot(aes(fill = estimate)) + 
+  geom_sf(color = NA) + 
+  coord_sf(crs = 26911) + 
+  scale_fill_viridis_c(option = "magma") 
+```
