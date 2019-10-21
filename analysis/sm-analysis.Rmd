@@ -39,7 +39,10 @@ CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Thi
 # Load and clean data by fixing zip codes to add a leading zero for northeastern zip codes
 underwater <- read_xlsx("../data/input_data/corelogic_underwater_homes.xlsx") %>%
   clean_names() %>%
-  mutate(zip_code = clean.zipcodes(zip_code))
+  mutate(zip_code = clean.zipcodes(zip_code)) %>%
+  select(zip_code, share_of_homes_in_negative_equity)
+
+write_csv(underwater, "../data/output_data/underwater_cleaned.csv")
 
 # Check for dup zip codes 
 
@@ -60,6 +63,14 @@ acs_zcta_total_pop <- get_acs(geography = "zcta", variables = c("B06012_001"), g
 # Join it
 zcta_underwater_geography <- acs_zcta_total_pop %>%
   inner_join(underwater, by = c("GEOID" = "zip_code"))
+
+# anti join
+
+zcta_anti <- underwater %>%
+  anti_join(acs_zcta_total_pop, by = c("zip_code" = "GEOID"))
+
+zcta_anti_x <- acs_zcta_total_pop %>%
+  anti_join(underwater, by = c("GEOID" = "zip_code"), keepall=TRUE)
 
 ```
 
