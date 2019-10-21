@@ -22,7 +22,9 @@ library(lubridate)
 library(readxl)
 library(zipcode)
 library(maps)
+library(tidycensus)
 ```
+
 
 ## Load and Clean Data
 
@@ -36,6 +38,9 @@ CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Thi
 underwater <- read_xlsx("../data/input_data/corelogic_underwater_homes.xlsx") %>%
   clean_names() %>%
   mutate(zip_code = clean.zipcodes(zip_code))
+
+zip_county_crosswalk <- read_xlsx("../data/input_data/ZIP_COUNTY_092019.xlsx") %>%
+  select(zip, county)
 
 ```
 
@@ -53,18 +58,70 @@ underwater %>%
 
 ```
 
-```{r}
 
-underwater %>%
+
+```{r}
+# County level analysis
+
+underwater_x <- underwater %>%
+  left_join(zip_county_crosswalk, by=c("zip_code" = "zip")) %>%
+  group_by(zip_code) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count)) %>%
+  filter(count > 1)
+
+# Build tables of share of homes in negative equity
+
+
+underwater_counties <- underwater %>%
   filter(!is.na(share_of_homes_in_negative_equity)) %>%
-  filter(state_name == "Maryland") %>%
   group_by(state_name, county_name) %>%
   summarise(mean_pct_underwater = mean(share_of_homes_in_negative_equity)*100) %>%
-  arrange(desc(mean_pct_underwater))
+  arrange(desc(mean_pct_underwater)) %>%
+  mutate(NAME = paste0())
+
+# Get Census Data by County
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+acs_county_total_pop <- get_acs(geography = "county", variables = c("B06012_001"), geometry = FALSE)
+
 
 ```
 
 ```{r}
+
+# Define census api key
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+# Examine ACS Variables
+acs_variable <- load_variables(2017, "acs5", cache = TRUE)
+# B07001 GEOGRAPHICAL MOBILITY IN THE PAST YEAR
+  # Mobility B07001_017	Estimate!!Total!!Same house 1 year ago
+#  B06012_002	 POVERTY STATUS IN THE PAST 12 MONTHS
+  # Total Population B06012_001	Estimate!!Total
+  # Poverty B06012_002	Estimate!!Total!!Below 100 percent of the poverty level
+  # Poverty B06012_003	Estimate!!Total!!100 to 149 percent of the poverty level
+  # Poverty B06012_004	Estimate!!Total!!At or above 150 percent of the poverty level
+
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+acs_county_total_pop <- get_acs(geography = "county", variables = c("B06012_001"), geometry = FALSE)
+
+
+
+acs_zip <- get_acs(geography = "zcta", variables = c("B06012_001"), geometry = FALSE)
+
+
+acs <- acs %>%
+  left_join(acs_variable, by = c("variable" = "name"))
+
+head(orange)
+
+orange %>%
+  ggplot(aes(fill = estimate)) + 
+  geom_sf(color = NA) + 
+  coord_sf(crs = 26911) + 
+  scale_fill_viridis_c(option = "magma") 
 
 ```
 
