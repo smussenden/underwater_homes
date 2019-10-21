@@ -23,6 +23,8 @@ library(readxl)
 library(zipcode)
 library(maps)
 library(tidycensus)
+library(mapview)
+
 ```
 
 
@@ -39,8 +41,63 @@ underwater <- read_xlsx("../data/input_data/corelogic_underwater_homes.xlsx") %>
   clean_names() %>%
   mutate(zip_code = clean.zipcodes(zip_code))
 
-zip_county_crosswalk <- read_xlsx("../data/input_data/ZIP_COUNTY_092019.xlsx") %>%
-  select(zip, county)
+# Check for dup zip codes 
+
+underwater %>%
+  group_by(zip_code) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+# Load ZCTA geography data 
+acs_variable <- load_variables(2017, "acs5", cache = TRUE)
+
+# Define census api key
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+# Get zip code geography data with total population zcta 2017
+acs_zcta_total_pop <- get_acs(geography = "zcta", variables = c("B06012_001"), geometry = TRUE, survey="acs5", year = 2017)
+
+# Join it
+zcta_underwater_geography <- acs_zcta_total_pop %>%
+  inner_join(underwater, by = c("GEOID" = "zip_code"))
+
+```
+
+```{r}
+# make a map
+
+#zcta_underwater_geography_x <- zcta_underwater_geography %>%
+#  filter(share_of_homes_in_negative_equity > .05)
+
+zcta_underwater_geography_x <- zcta_underwater_geography %>%
+  filter(state_name == "New Jersey")
+
+
+mapview(zcta_underwater_geography_x, zcol = "share_of_homes_in_negative_equity", legend = TRUE)
+```
+
+
+
+## Test Correlations
+
+```{r}
+# Get zip code geography data with total population zcta 2017
+#acs_zcta_total_pop <- get_acs(geography = "zcta", variables = c("B06012_001"), geometry = TRUE, survey="acs5", year = 2017)
+
+# Poverty B06012_002	Estimate!!Total!!Below 100 percent of the poverty level
+acs_zcta_total_pov <- get_acs(geography = "zcta", variables = c("B06012_002"), geometry = TRUE, survey="acs5", year = 2017, summary_var = "B06012_001")
+
+# Calculate MOE
+acs_zcta_total_pov_x <- acs_zcta_total_pov %>%
+  mutate(moe_percent = moe/estimate) %>%
+  filter(moe_percent != "Inf") %>%
+  filter(moe_percent < .2)
+
+acs_zcta_total_pov_x <- acs_zcta_total_pov_x %>%
+  left_join(underwater, by = c("GEOID" = "zip_code")) %>%
+  mutate(pov_rate = estimate/summary_est)
+
+  
 
 ```
 
@@ -122,6 +179,10 @@ orange %>%
   geom_sf(color = NA) + 
   coord_sf(crs = 26911) + 
   scale_fill_viridis_c(option = "magma") 
+
+
+zip_county_crosswalk <- read_xlsx("../data/input_data/ZIP_COUNTY_092019.xlsx") %>%
+  select(zip, county)
 
 ```
 
