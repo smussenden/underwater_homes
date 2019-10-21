@@ -15,13 +15,42 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, paged.print=TRU
 ## Load Packages
 
 
+
+
 ```{r}
 library(tidyverse)
 library(janitor)
 library(lubridate)
 library(readxl)
 library(zipcode)
+library(tidycensus)
+library(tidycensus)
+
+#census api key 
+
+census_api_key("eca10bc32a0b2c31610123ac74938aecd2228af6",install = TRUE )
 ```
+```{r}
+
+#start using API key 
+ 
+readRenviron("~/.Renviron")
+
+```
+
+
+```{r}
+
+#  To rapidly search for variables, use the load_variables function. The function takes two required arguments: the year of the Census or endyear of the ACS sample, and the dataset - one of "sf1", "sf3", or "acs5". For ideal functionality, I recommend assigning the result of this function to a variable, setting cache = TRUE to store the result on your computer for future access, and using the View function in RStudio to interactively browse for variables. 
+
+v17 <- load_variables(2017, "acs5", cache = TRUE)
+
+View(v17) 
+
+# think the most recent ACS is 2017 
+```
+
+
 
 ## Load and Clean Data
 
@@ -73,3 +102,83 @@ The most recent ACS 5-year estimates
 https://github.com/walkerke/tidycensus
 https://walkerke.github.io/tidycensus/articles/basic-usage.html#searching-for-variables
 
+
+```{r}
+
+
+
+#LOADING IN DATA FROM ACS RACE 
+
+#2013- 2017 5-year ACS race total (BO2001_001)
+
+# zcta vs zip codes ? 
+# use total vs white_alone
+
+
+
+total <- get_acs ( geography = "zcta", 
+              variables = c(total= "B02001_001")) 
+
+white_alone <- get_acs ( geography = "zcta", 
+              variables = c(white_alone= "B02001_002"))
+
+Black_African_American_alone<- get_acs ( geography = "zcta", 
+              variables = c(Black_African_American_alone= "B02001_003"))
+
+
+American_Indian_and_alaska_Native_alone<- get_acs ( geography = "zcta", 
+              variables = c(American_Indian_and_alaska_Native_alone= "B02001_004"))
+
+Asian_alone<- get_acs ( geography = "zcta", 
+              variables = c(Asian_alone= "B02001_005"))
+
+Native_Hawaiian_Other_Pacific_Islander_alone	<- get_acs ( geography = "zcta", 
+              variables = c(Native_Hawaiian_Other_Pacific_Islander_alone = "B02001_006"))
+              
+              
+
+Some_other_race_alone<- get_acs ( geography = "zcta", 
+              variables = c(Some_other_race_alone= "B02001_007"))
+
+
+
+
+
+#Total: In census online at https://data.census.gov/cedsci/table?q=race&hidePreview=true&table=B02001&tid=ACSDT5Y2017.B02001&lastDisplayedRow=9 the variables showing up are the follwoing :  White alone,  Black or African American alone, American Indian and Alaska Native alone, Asian alone , Native Hawaiian and Other Pacific Islander alone, Some other race alone, Two or more races:, Two races including Some other race, two races excluding Some other race, and three or more races. 
+
+#Race vs ethnicity- I imagine they are categorizing hispanic/latino into the some other race or adding them into white alone, so did not include. 
+
+#  hispanic_or_latino_alone<- get_acs ( geography = "zcta",   variables = c(hispanic_or_latin0_alone= "B03002_013")) 
+
+#maybe some way to analyze this later? would require seperate analysis? 
+
+
+
+
+```
+
+```{r}
+ # median household income estimate total 
+# could not find 5 years? not sure if total means 5 years 
+
+
+
+median_household_income<- get_acs ( geography = "zcta", 
+              variables = c(median_household_income= "B25099_001"))
+
+
+
+```
+
+```{r}
+
+
+#poverty rate 
+
+#C27018_001Estimate!!Total
+
+#not sure which one to use . 
+
+
+
+``` 
