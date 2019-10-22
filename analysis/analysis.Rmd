@@ -105,8 +105,6 @@ https://walkerke.github.io/tidycensus/articles/basic-usage.html#searching-for-va
 
 ```{r}
 
-
-
 #LOADING IN DATA FROM ACS RACE 
 
 #2013- 2017 5-year ACS race total (BO2001_001)
@@ -114,13 +112,25 @@ https://walkerke.github.io/tidycensus/articles/basic-usage.html#searching-for-va
 # zcta vs zip codes ? 
 # use total vs white_alone
 
-
-
 total <- get_acs ( geography = "zcta", 
-              variables = c(total= "B02001_001")) 
+              variables = c(total= "B02001_001"))
+
+
 
 white_alone <- get_acs ( geography = "zcta", 
-              variables = c(white_alone= "B02001_002"))
+              variables = c(white_alone= "B02001_002"), summary_var = "B02001_001") 
+
+
+race <- white_alone %>% select (NAME,estimate, moe, summary_est, summary_moe) %>% rename (zip_code = NAME, white_alone= estimate , total  = summary_est ) %>% mutate (percent_not_white = (total - white_alone) / total ) %>% print (race)
+ 
+                     
+                  
+```
+
+
+
+```{r}
+
 
 Black_African_American_alone<- get_acs ( geography = "zcta", 
               variables = c(Black_African_American_alone= "B02001_003"))
@@ -141,9 +151,6 @@ Some_other_race_alone<- get_acs ( geography = "zcta",
               variables = c(Some_other_race_alone= "B02001_007"))
 
 
-
-
-
 #Total: In census online at https://data.census.gov/cedsci/table?q=race&hidePreview=true&table=B02001&tid=ACSDT5Y2017.B02001&lastDisplayedRow=9 the variables showing up are the follwoing :  White alone,  Black or African American alone, American Indian and Alaska Native alone, Asian alone , Native Hawaiian and Other Pacific Islander alone, Some other race alone, Two or more races:, Two races including Some other race, two races excluding Some other race, and three or more races. 
 
 #Race vs ethnicity- I imagine they are categorizing hispanic/latino into the some other race or adding them into white alone, so did not include. 
@@ -159,12 +166,24 @@ Some_other_race_alone<- get_acs ( geography = "zcta",
 
 ```{r}
  # median household income estimate total 
-# could not find 5 years? not sure if total means 5 years 
+
+median_household_income <- get_acs (geography = "zcta", 
+              variables = c(median_household_income= "B25099_001"))%>% select (NAME,estimate, moe) %>% rename (ZCTA = NAME, median_income = estimate) %>% print (median_household_income) 
+              
+```
+ 
 
 
 
-median_household_income<- get_acs ( geography = "zcta", 
-              variables = c(median_household_income= "B25099_001"))
+```{r}
+#poverty 
+
+
+Below_100_percent_poverty_level	<- get_acs ( geography = "zcta", 
+              variables = c(Below_100_percent_poverty_level = "B06012_002")) %>% select (NAME,estimate, moe) %>% rename (ZCTA = NAME, below_100_percent_poverty = estimate) %>% print (Below_100_percent_poverty_level)  
+
+
+
 
 
 
@@ -172,13 +191,36 @@ median_household_income<- get_acs ( geography = "zcta",
 
 ```{r}
 
-
-#poverty rate 
-
-#C27018_001Estimate!!Total
-
-#not sure which one to use . 
+race_median_household_income <- race %>%
+  inner_join( median_household_income , by="ZCTA") %>%  print (race_median_household_income)
 
 
+                                                                                                          
+
+```
+
+
+```{r}
+
+race_median_income_poverty <- race_median_household_income %>%
+  inner_join(Below_100_percent_poverty_level, by="ZCTA") %>%  print (race_median_income_poverty) 
 
 ``` 
+
+
+
+
+
+```{r}
+
+ # how to join if column is different ? 
+# all <-race_median_income_poverty %>% inner_join (underwater, by = "ZCTA") %>%  print  (race_median_income_poverty)
+
+
+```
+
+
+
+
+
+
