@@ -16,6 +16,8 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, paged.print=TRU
 
 
 ```{r}
+
+options(scipen=9999)
 library(tidyverse)
 library(janitor)
 library(lubridate)
@@ -24,25 +26,119 @@ library(zipcode)
 library(maps)
 library(tidycensus)
 library(mapview)
+library(corrr)
 
 ```
 
+#READ THIS: 
+#http://haasinstitute.berkeley.edu/sites/default/files/haasinsitute_underwateramerica_publish_0.pdf
 
-## Load and Clean Data
-
-From Connie Ford:
-
-CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Think data is Q1 2019, but not sure. 
+## Load and Clean County Data
 
 ```{r}
 
+# Load and clean new Core Logic data, by county
+
+underwater_county <- read_xlsx("../data/input_data/negative_equity_share_county.xlsx")
+
+# Clean data
+
+underwater_county<- underwater_county %>%
+  mutate(year=str_sub(yyyymm, 1,4)) %>%
+  mutate(month=str_sub(yyyymm,5,6)) %>%
+  select(state_code, fips_code, state_name, county_name,year, month, yyyymm, percent_negative_equity) %>%
+  mutate(fips_code = as.character(fips_code)) %>%
+  mutate(fips_code = case_when(str_length(fips_code) < 5  ~ paste0("0",fips_code),
+                                TRUE ~ fips_code)
+         )
+
+# Create annual averages
+
+underwater_county_year <- underwater_county %>%
+  group_by(state_code, fips_code, state_name, county_name, year) %>%
+  summarise(percent_negative_equity = mean(percent_negative_equity)) %>%
+  mutate(percent_negative_equity = round(percent_negative_equity*100, 2)) %>%
+  spread(year, percent_negative_equity) %>%
+  rename_at(vars(matches("20")), funs(paste0("y", .)))
+
+  
+```
+
+# Load and Clean Census Data
+
+``` {r}
+# Census Data
+# Load ZCTA geography data 
+acs_variable <- load_variables(2017, "acs5", cache = TRUE)
+
+# Define census api key
+census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
+
+# Get pct_white, poverty, income data
+
+acs_county_white <- get_acs(geography = "county", variables = c("B02001_002"), geometry = FALSE, survey="acs5", year = 2017, summary_var ="B01001_001") %>%
+  mutate(pct_white = estimate/summary_est) %>%
+  select(GEOID,NAME,pct_white) %>%
+  clean_names()
+
+acs_county_poverty <- get_acs(geography = "county", variables = c("B06012_002"), geometry = FALSE, survey="acs5", year = 2017, summary_var ="B01001_001") %>%
+  mutate(pct_poverty = estimate/summary_est) %>%
+  select(GEOID,NAME,pct_poverty) %>%
+  clean_names()
+
+acs_county_income <- get_acs(geography = "county", variables = c("B19013_001"), geometry = FALSE, survey="acs5", year = 2017) %>%
+  select(GEOID,NAME, median_household_income = estimate) %>%
+  clean_names()
+
+acs_data <- acs_county_white %>%
+  inner_join(acs_county_poverty) %>%
+  inner_join(acs_county_income)
+
+```
+
+# Join ACS Data to Underwater Data
+
+```{r}
+
+underwater_county_year_join <- underwater_county_year %>%
+  left_join(acs_data, by=c("fips_code" = "geoid")) %>%
+  ungroup()
+
+```
+
+# Analysis
+
+```{r}
+
+years <- c("y2018","y2017","y2016","y2015","y2014","y2013","y2012","y2011","y2010","y2009")
+
+for (year in years) {
+
+corr_table <- underwater_county_year_join %>%
+  select(-matches("code|state|name")) %>%
+  select(year, matches("pct|median")) %>%
+  filter(!is.na(deparse(substitute(year)))) %>%
+  correlate() %>%
+  select(rowname, year)
+
+print(corr_table)
+}  
+
+
+
+```
+
+## Zip Code Data
+CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Think data is Q1 2019, but not sure. 
+```{r0}
 # Load and clean data by fixing zip codes to add a leading zero for northeastern zip codes
 underwater <- read_xlsx("../data/input_data/corelogic_underwater_homes.xlsx") %>%
   clean_names() %>%
   mutate(zip_code = clean.zipcodes(zip_code)) %>%
-  select(zip_code, share_of_homes_in_negative_equity)
+  mutate(pct_homes_negative_equity = round(share_of_homes_in_negative_equity*100, 2)) %>%
+  select(-share_of_homes_in_negative_equity)
 
-write_csv(underwater, "../data/output_data/underwater_cleaned.csv")
+write_csv(underwater, "../data/output_data/underwater_cleaned_z.csv")
 
 # Check for dup zip codes 
 
@@ -58,7 +154,7 @@ acs_variable <- load_variables(2017, "acs5", cache = TRUE)
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 
 # Get zip code geography data with total population zcta 2017
-acs_zcta_total_pop <- get_acs(geography = "zcta", variables = c("B06012_001"), geometry = TRUE, survey="acs5", year = 2017)
+acs_zcta_total_pop <- get_acs(geography = "county", variables = c("B06012_001"), geometry = TRUE, survey="acs5", year = 2017)
 
 # Join it
 zcta_underwater_geography <- acs_zcta_total_pop %>%
