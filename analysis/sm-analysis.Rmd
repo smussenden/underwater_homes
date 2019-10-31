@@ -35,7 +35,7 @@ library(leaflet)
 library(leafpop)
 library(leafem)
 library(raster)
-
+library(tigris)
 ```
 
 #READ THIS: 
@@ -51,10 +51,10 @@ underwater_county <- read_xlsx("../data/input_data/negative_equity_share_county.
 
 # Clean County by Year and Month 
 
-underwater_county<- underwater_county %>%
+underwater_county <- underwater_county %>%
   mutate(year=str_sub(yyyymm, 1,4)) %>%
   mutate(month=str_sub(yyyymm,5,6)) %>%
-  select(state_code, fips_code, state_name, county_name,year, month, yyyymm, percent_negative_equity) %>%
+  dplyr::select(state_code, fips_code, state_name, county_name,year, month, yyyymm, percent_negative_equity) %>%
   mutate(fips_code = as.character(fips_code)) %>%
   mutate(fips_code = case_when(str_length(fips_code) < 5  ~ paste0("0",fips_code),
                                 TRUE ~ fips_code)
@@ -77,7 +77,7 @@ underwater_zips_2019 <- underwater_zips_2019 %>%
   clean_names() %>%
   mutate(zip_code = clean.zipcodes(zip_code)) %>%
   mutate(pct_homes_negative_equity = round(share_of_homes_in_negative_equity*100, 2)) %>%
-  select(-share_of_homes_in_negative_equity)
+  dplyr::select(-share_of_homes_in_negative_equity)
 
 ### Load NYT Ruralness thing
   
@@ -86,10 +86,162 @@ underwater_zips_2019 <- underwater_zips_2019 %>%
 ## Load Shapefiles
 
 ```{r}
+
+# ZIP Code Points
 data(zipcode)
+
+# ZCTA shapefiles
+zctas <- zctas(cb=TRUE)
+
+# Counties
+counties <- counties(cb = TRUE)
+
+
 ```
 
-## Visualize Current ZIP Code Negative Equity Rate
+## Visualize Current Yearly Average County Negative Equity Rate
+
+```{r}
+
+# Filter for 2017
+underwater_county_year_2017 <- underwater_county_year %>%
+  dplyr::select(state_code, fips_code, state_name, county_name, y2017) %>%
+  filter(y2017 >= 4)
+
+# Join zip code coordinates to negative equity by zipcode
+underwater_county_year_2017 <- geo_join(counties, underwater_county_year_2017, 'GEOID', 'fips_code', 
+how = "inner")  
+
+# Color Scheme
+binpal <- colorBin("plasma", underwater_county_year_2017$y2017, 5, pretty = FALSE)
+
+# Draw map
+leaflet(underwater_county_year_2017) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(y2017), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(underwater_county_year_2017)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   addLogo("https://jeroenooms.github.io/images/banana.gif",
+        position = "bottomleft",
+        offset.x = 5,
+        offset.y = 40,
+        width = 100,
+        height = 100) %>%
+   addLegend("bottomleft", 
+             pal = binpal, 
+             values = underwater_county_year_2017$y2017,
+    title = "% Homes Negative Equity 2017",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
+)
+
+
+```
+
+## Visualize Current ZIP Code Negative Equity Rate as polygons
+
+```{r}
+
+# Filter for only high negative equity zip codes
+
+underwater_zips_2019_x <- underwater_zips_2019 %>%
+  filter(pct_homes_negative_equity >= 5)
+
+# Join zip code coordinates to negative equity by zipcode
+underwater_zctas_2019 <- geo_join(zctas, underwater_zips_2019_x, 'GEOID10', 'zip_code', 
+how = "inner")
+
+# Color Scheme
+binpal <- colorBin("plasma", underwater_zctas_2019$pct_homes_negative_equity, 5, pretty = FALSE)
+
+# Draw map
+leaflet(underwater_zctas_2019) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(pct_homes_negative_equity), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(underwater_zctas_2019)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   addLogo("https://jeroenooms.github.io/images/banana.gif",
+        position = "bottomleft",
+        offset.x = 5,
+        offset.y = 40,
+        width = 100,
+        height = 100) %>%
+   addLegend("bottomleft", 
+             pal = colorBin("plasma", underwater_zctas_2019$pct_homes_negative_equity), 
+             values = underwater_zctas_2019$pct_homes_negative_equity,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
+)
+
+
+
+# addPolygons(color = "black", weight = 1, smoothFactor = 0.5,
+#    opacity = 1.0, fillOpacity = 0.5,
+#    fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+#    highlightOptions = highlightOptions(color = "white", weight = 2,
+#      bringToFront = TRUE))
+
+
+```
+
+## Visualize Current ZIP Code Negative Equity Rate as dots
 
 ```{r}
 
@@ -105,7 +257,7 @@ underwater_zips_2019_x <- st_as_sf(x = underwater_zips_2019_x,
 # Filter for higher negative equity
 
 underwater_zips_2019_x <- underwater_zips_2019_x %>%
-  filter(pct_homes_negative_equity >= 5)
+  filter(pct_homes_negative_equity >= 7.5)
 
 #
 
@@ -166,27 +318,7 @@ leaflet() %>%
 
 
 ```
-# Map it, son
-#m <- mapview(underwater_zips_2019_x, 
-        cex = "pct_homes_negative_equity", 
-        zcol= "pct_homes_negative_equity",
-        col.regions = viridisLite::inferno,
-        at = seq(10, 27, 5))
-        ) %>%   
-  addProviderTiles(providers$Stamen.Toner) %>% 
-  # addCircleMarkers(data = underwater_zips_2019_x) %>%
-  addHomeButton(extent(50, 50, 100, 100), "home")
-m
-qpal <- colorQuantile(, underwater_zips_2019_x$pct_homes_negative_equity, n = 3)
 
-pal <- colorNumeric(
-  palette = "magma",
-  domain = underwater_zips_2019_x$pct_homes_negative_equity)
-
-
-# pal <- colorFactor(c("navy", "red"), domain = c("ship", "pirate"))
-
-```
 
 
 
