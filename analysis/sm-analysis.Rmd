@@ -36,6 +36,8 @@ library(leafpop)
 library(leafem)
 library(raster)
 library(tigris)
+library(DT)
+library(moderndive)
 ```
 
 #READ THIS: 
@@ -176,18 +178,32 @@ rm(list=ls(pattern="acs_zcta"))
 
 # https://www.zillow.com/research/data/
 # Home Values summary for Current Month (Oct 2019) by County and ZIP Code (including historical comparison)
-county_ZHVI_summary_current_month <- read_csv("../data/input_data/zillow/County_Zhvi_Summary_AllHomes.csv")
+county_ZHVI_summary_current_month <- read_csv("../data/input_data/zillow/County_Zhvi_Summary_AllHomes.csv") %>%
+  mutate(five_year = `5Year`,
+         ten_year = `10Year`) %>%
+  dplyr::select(-`5Year`, -`10Year`)
 Zip_ZHVI_summary_current_month <- read_csv("../data/input_data/zillow/Zip_Zhvi_Summary_AllHomes.csv") %>%
   mutate(five_year = `5Year`,
          ten_year = `10Year`) %>%
   dplyr::select(-`5Year`, -`10Year`)
 
+# Year over year ZHVI forecast current month (Oct 2019), all geographics (long sheet, sted wide)
+all_regions_forecasts <- read_csv("../data/input_data/zillow/AllRegionsForePublic-1.csv")
+
+county_forecasts <- all_regions_forecasts %>%
+  filter(Region == "County")
+
+zip_forecasts <- all_regions_forecasts %>%
+  filter(Region=="Zip")
+
 # Time series home values by County and Zip
 county_ZHVI_time_series <- read_csv("../data/input_data/zillow/County_Zhvi_AllHomes.csv")
 Zip_ZHVI_time_series <- read_csv("../data/input_data/zillow/Zip_Zhvi_AllHomes.csv")
 
-# Year over year ZHVI forecast current month (Oct 2019), all geographics (long sheet, sted wide)
-all_regions_forecasts <- read_csv("../data/input_data/zillow/AllRegionsForePublic-1.csv")
+# Join county summary plus forecast
+county_summary_forecast <- county_ZHVI_summary_current_month %>%
+  inner_join(county_forecasts, by=c("State" = "StateName","RegionName" = "CountyName")) %>%
+  dplyr::select(-Region, -RegionName.y, -CityName) 
 
 
 
@@ -196,6 +212,16 @@ all_regions_forecasts <- read_csv("../data/input_data/zillow/AllRegionsForePubli
 # Need to get mortgage data
 
 ```
+
+## Load and clean Urban Rural
+
+```{r}
+rural_urban <- read_xls("../data/input_data/rural_urban_codes/ruralurbancodes2013.xls")
+```
+
+
+
+
 
 ## Load and clean HMDA
 
@@ -223,23 +249,23 @@ counties <- counties(cb = TRUE)
 
 ```{r}
 
-# Filter for 2017
-underwater_county_year_2017 <- underwater_county_year %>%
-  dplyr::select(state_code, fips_code, state_name, county_name, y2017) %>%
-  filter(y2017 >= 4)
+# Filter for 2019
+underwater_county_year_2019 <- underwater_county_year %>%
+  dplyr::select(state_code, fips_code, state_name, county_name, y2019) %>%
+  filter(y2019 >= 4)
 
 # Join zip code coordinates to negative equity by zipcode
-underwater_county_year_2017 <- geo_join(counties, underwater_county_year_2017, 'GEOID', 'fips_code', 
+underwater_county_year_2019 <- geo_join(counties, underwater_county_year_2019, 'GEOID', 'fips_code', 
 how = "inner")  
 
 # Color Scheme
-binpal <- colorBin("plasma", underwater_county_year_2017$y2017, 5, pretty = FALSE)
+binpal <- colorBin("plasma", underwater_county_year_2019$y2019, 5, pretty = FALSE)
 
 # Draw map
-leaflet(underwater_county_year_2017) %>%
+leaflet(underwater_county_year_2019) %>%
    addProviderTiles(providers$CartoDB.Positron) %>%
    #addProviderTiles(providers$Wikimedia) %>%
-   addPolygons(fillColor = ~binpal(y2017), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(underwater_county_year_2017)) %>%
+   addPolygons(fillColor = ~binpal(y2019), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(underwater_county_year_2019)) %>%
    setView(-95, 39.335359608681216, 4) %>%
    addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
    addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
@@ -260,8 +286,8 @@ leaflet(underwater_county_year_2017) %>%
         height = 100) %>%
    addLegend("bottomleft", 
              pal = binpal, 
-             values = underwater_county_year_2017$y2017,
-    title = "% Homes Negative Equity 2017",
+             values = underwater_county_year_2019$y2019,
+    title = "% Homes Negative Equity 2019",
     labFormat = labelFormat(prefix = ""),
     opacity = 1
   ) %>%
@@ -284,7 +310,11 @@ leaflet(underwater_county_year_2017) %>%
 )
 
 
+# BUILD A SLIDER OF TOP 10 PERCENET RANK 
+
 ```
+
+
 
 ## Visualize Current ZIP Code Negative Equity Rate as polygons
 
@@ -439,13 +469,6 @@ leaflet() %>%
 ```
 
 
-# Examine county underwater rates and census correlations
-
-```{r}
-
-
-
-```
 
 # Examine zcta underwater rates and census correlations
 
@@ -456,7 +479,7 @@ leaflet() %>%
 
 underwater_zips_2019_join <- underwater_zips_2019 %>%
   inner_join(acs_data_zcta, by=c("zip_code" = "geoid")) %>%
-  inner_join(Zip_ZHVI_summary_current_month, by=c("zip_code" = "RegionName")) %>%
+  inner_join(Zip_ZHVI_summary_current_month, by=c("zip_code" = "RegionName")) %>% 
   #%>%
   #filter(!is.na(pct_homes_negative_equity),
    #      pct_white != "NaN",
@@ -504,7 +527,14 @@ ggplot(underwater_zips_2019_join) +
 underwater_county_year_join <- underwater_county_year %>%
   inner_join(acs_data_county, by=c("fips_code"="geoid")) %>%
   ungroup() %>%
-  inner_join(county_ZHVI_summary_current_month, by=c("state" = "State", "county" = "RegionName")) 
+  inner_join(county_summary_forecast, by=c("state" = "State", "county" = "RegionName")) %>%
+  inner_join(rural_urban, by=c("fips_code" = "FIPS")) %>%
+  mutate(housing_affordability = Zhvi/median_household_income) %>%
+  filter(Population_2010 > 100000) %>%
+  filter(y2019 >=1)
+
+
+# CREATE A FEATURE OF HOME VALUE RELATIVE TO MEDIAN INCOME
 
 # Create correlation table, one for each year
 
@@ -512,12 +542,13 @@ underwater_county_year_join <- underwater_county_year %>%
 
 #for (year in years) {
 
-corr_table <- underwater_county_year_join %>%
-  dplyr::select(-matches("code|state|name|county|date|region|Metro|County|City|Month|Quarter|Last|Time")) %>%
+underwater_county_year_join %>%
+  dplyr::select(-matches("code|state|name|county|date|region|Metro|County|City|Month|Quarter|Last|Time|Description")) %>%
   #dplyr::select(matches("pct|median")) %>%
   #filter(!is.na(deparse(substitute(year)))) %>%
   correlate() %>%
   #dplyr::select(rowname, year) %>%
+  filter(str_detect(rowname, "^y")) %>%
   datatable(
     extensions = 'FixedColumns',
     options = list(
@@ -528,44 +559,20 @@ corr_table <- underwater_county_year_join %>%
   )
   )
 
-print(corr_table)
-#}  
+underwater_county_year_join <- underwater_county_year_join %>%
+  dplyr::select(-matches("code|state|name|county|date|region|Metro|County|City|Month|Quarter|Last|Time|Description")) 
 
-glimpse(underwater_county_year_join)
-
- 
-corr_table_zcta <- underwater_zips_2019_join %>%
-  dplyr::select(-matches("code|name|Date|Region|State|Metro|County|City|Month|Quarter|Last|Time")) %>%
-  dplyr::select(matches("pct|year")) %>%
-  correlate() #%>%
-  #dplyr::select(rowname, pct_homes_negative_equity)
-
-print(corr_table_zcta)
-#https://www.dataquest.io/blog/statistical-learning-for-predictive-modeling-r/
 #install.packages("moderndive")
 
-score_model <- lm(pct_homes_negative_equity ~ pct_white+pct_black+pct_hispanic+PctFallFromPeak, data = underwater_zips_2019_join)
+score_model <- lm(y2019~ ., data = underwater_county_year_join)
 get_regression_table(score_model) %>% datatable()
 get_regression_summaries(score_model) %>% datatable()
 
-ggplot(underwater_zips_2019_join) +
-  geom_point(aes(pct_homes_negative_equity, pct_white)) +
-  labs(x="Percent Negative Equity", y="Percent White", title="", caption = "") +
-  geom_smooth(aes(pct_homes_negative_equity, pct_white), method = "lm", se = FALSE) 
-
-ggplot(underwater_zips_2019_join) +
-  geom_point(aes(pct_homes_negative_equity, pct_black)) +
-  labs(x="Percent Negative Equity", y="Percent Black", title="", caption = "") +
-  geom_smooth(aes(pct_homes_negative_equity, pct_black), method = "lm", se = FALSE) 
-
-ggplot(underwater_zips_2019_join) +
-  geom_point(aes(pct_homes_negative_equity, pct_hispanic)) +
-  labs(x="Percent Negative Equity", y="Percent Hispanic", title="", caption = "") +
-  geom_smooth(aes(pct_homes_negative_equity, pct_hispanic), method = "lm", se = FALSE) 
-
-
-
+# Ratio of home prices to earnings by county? That's a feature to engineer and test
 # Findings -- look at relationship between ZHVI and year.  It used to be much more strongly related to ZHVI in the past than it is now! Suggests it's no longer a function of housing prices.  Something else more important at work here. 
+# Tends to be a metro area problem.....
+# What would happen if we just filtered non rural
+
 
 ```
 
@@ -573,17 +580,20 @@ ggplot(underwater_zips_2019_join) +
 
 ```{r}
 
-underwater_county_year_x <- underwater_county_year %>%
-  na.omit() %>%
-  mutate(y2009 = as.numeric(y2009)) %>%
-  mutate(rank = dense_rank(desc(y2009)))
+underwater_county_year_ranks <- underwater_county_year %>%
+  filter(y2019 >= 1) %>%
+  ungroup() %>%
+  #na.omit() %>%
+  mutate_at(vars(starts_with("y")), funs(round(percent_rank(.)*100,0))) %>% 
+  rename_at(vars(starts_with("y")), function(x) paste0(x,"_rank"))
 
-print(underwater_county_year_x$rank)
+underwater_county_year_ranks <- underwater_county_year_ranks %>%
+  left_join(underwater_county_year, by=c("state_code", "fips_code", "state_name", "county_name")) %>%
+  left_join(acs_data_county, by=c("fips_code" = "geoid"))
+  
+print(underwater_county_year_ranks)
 
-df = data.frame(name = c("A","B","C","D"),
-                score=c(10,10,9,8), score2 = c(5,1,9,2))
 
-select(df, -name) %>% mutate_all(funs(dense_rank(desc(.))))
 
 ```
 
