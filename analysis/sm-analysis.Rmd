@@ -88,7 +88,7 @@ underwater_zips_2019 <- underwater_zips_2019 %>%
 ``` {r}
 # Census Data
 # Load ZCTA geography data 
-acs_variable <- load_variables(2017, "acs5", cache = TRUE)
+# acs_variable <- load_variables(2017, "acs5", cache = TRUE)
 
 # Define census api key
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
@@ -131,6 +131,9 @@ fips_codes <- fips_codes %>%
 acs_data_county <- acs_data_county %>%
   inner_join(fips_codes, by=c("geoid" = "fips_code"))
 
+rm(list=ls(pattern="acs_county"))
+
+
 # Get pct_white, poverty, income data by zip
 
 acs_zcta_white <- get_acs(geography = "zcta", variables = c("B02001_002"), geometry = FALSE, survey="acs5", year = 2017, summary_var ="B01001_001") %>%
@@ -162,6 +165,8 @@ acs_data_zcta <- acs_zcta_white %>%
   inner_join(acs_zcta_hispanic) %>%
   inner_join(acs_zcta_poverty) %>%
   inner_join(acs_zcta_income)
+
+rm(list=ls(pattern="acs_zcta"))
 
 ```
 
@@ -431,7 +436,6 @@ leaflet() %>%
   )
 )
 
-
 ```
 
 
@@ -565,6 +569,23 @@ ggplot(underwater_zips_2019_join) +
 
 ```
 
+### Examine Change Over Time
+
+```{r}
+
+underwater_county_year_x <- underwater_county_year %>%
+  na.omit() %>%
+  mutate(y2009 = as.numeric(y2009)) %>%
+  mutate(rank = dense_rank(desc(y2009)))
+
+print(underwater_county_year_x$rank)
+
+df = data.frame(name = c("A","B","C","D"),
+                score=c(10,10,9,8), score2 = c(5,1,9,2))
+
+select(df, -name) %>% mutate_all(funs(dense_rank(desc(.))))
+
+```
 
 ## Zip Code Data
 CoreLogic data. Percent of homes with negative equity for all U.S. ZipCodes. Think data is Q1 2019, but not sure. 
@@ -608,6 +629,7 @@ zcta_anti_x <- acs_zcta_total_pop %>%
 
 ```
 
+# Examine 
 
 
 
