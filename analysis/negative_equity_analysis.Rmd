@@ -56,6 +56,8 @@ Also pulled real estate market data from Zillow and deomgraphic info from the U.
 
 ```{r}
 
+NEED TO PULL IN BLS DATA BY COUNTY
+
 # Load negative equity share by county by month-year
 underwater_county_month_year <- read_xlsx("../data/input_data/core_logic/negative_equity_share_county.xlsx")
 
