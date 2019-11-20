@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-This R Markdown document describes initial data analysis done to identify U.S. communities where a significant portion of homes are "underwater", where the estimated value of a home is lower than the estimated principal balance of the mortgage (negative loan to value or LTV). The analysis also seeks to identify demographic and economic features of communities with high rates of negative LTV homes, and to understand how negative LTV rates have changed since 2009, when some communities had a majority of homes with negative LTVs. 
+This memo describes initial data analysis done to identify U.S. communities where a significant portion of homes are "underwater", where the estimated value of a home is lower than the estimated principal balance of the mortgage (negative loan to value or LTV). The analysis also seeks to identify demographic and economic features of communities with high rates of negative LTV homes, and to understand how negative LTV rates have changed since 2009, when some communities had a majority of homes with negative LTVs. 
 
 # Major findings
 
@@ -24,39 +24,50 @@ This R Markdown document describes initial data analysis done to identify U.S. c
 # Turn off scientific notation
 options(scipen=9999)
 
-# Load packages
+## Load packages
+# For general data science goodness
 library(tidyverse)
+
+# For data cleaning
 library(janitor)
+
+# For working with datetime
 library(lubridate)
+
+# For reading in Excel files
 library(readxl)
+
+# For working with ZIP Codes
 library(zipcode)
+
+# For mapping
 library(maps)
-library(tidycensus)
 library(mapview)
-library(corrr)
-library(scales)
-library(mapview)
-library(ggthemes)
-library(zipcode)
 library(sf)
 library(leaflet)
 library(leafpop)
 library(leafem)
 library(raster)
 library(tigris)
-library(DT)
+
+# For pulling census data
+library(tidycensus)
+
+# For correlations
+library(corrr)
 library(moderndive)
+
+# For graphics
+library(scales)
+library(ggthemes)
+library(DT)
 ```
 
-## Load and clean data
+## Load and clean negative equity data
 
-Data on negative equity via CoreLogic.  Two data sets: negative equity share of all homes by county by month-year from 2009 to present; negative equity share of all homes by ZIP code for unknown month in 2019 (have a call in).  We are waiting for a third data set, which they sent to us, but had errors I identified (only had data for four states), of negative equity share of all homes by ZIP code by month-year from 2009-present.
-
-Also pulled real estate market data from Zillow and deomgraphic info from the U.S. census.
+Data on negative equity via CoreLogic.  Two data sets: negative equity share of all homes by county by month-year from 2009 to present; negative equity share of all homes by ZIP code for unknown month in 2019 (have a call in).  We are waiting for a third data set, which they sent to us, but had errors I identified (only had data for four states), of negative equity share of all homes by ZIP code by month-year from 2009-present. I've also reached out to Zillow for additional data.
 
 ```{r}
-
-NEED TO PULL IN BLS DATA BY COUNTY
 
 # Load negative equity share by county by month-year
 underwater_county_month_year <- read_xlsx("../data/input_data/core_logic/negative_equity_share_county.xlsx")
@@ -85,9 +96,14 @@ underwater_county_year <- underwater_county_month_year %>%
   # Make the long data wide
   spread(year, percent_negative_equity) %>%
   # Fix column names
-  rename_at(vars(matches("20")), funs(paste0("y", .)))
+  rename_at(vars(matches("20")), funs(paste0("pct_negative_equity_y", .)))
 
-### Load and clean ZIP Code in unknown time period in 2019
+# Remove underwater_county_month_year
+rm(underwater_county_month_year)
+
+# Load and clean ZIP Code from unknown time period in 2019
+# Still need to get from CoreLogic an answer on time period
+
 underwater_zips_2019 <- read_xlsx("../data/input_data/core_logic/corelogic_underwater_homes.xlsx") 
 
 # Clean ZIP code in unknown time period in 2019
@@ -101,42 +117,21 @@ underwater_zips_2019 <- underwater_zips_2019 %>%
   dplyr::select(-share_of_homes_in_negative_equity)
 
 
-# Time series zips
-#underwater_zips <- read_csv("../data/input_data/zip_negative_equity_extended.csv") %>%
-#  mutate(year=str_sub(yyyymm, 1,4)) %>%
-#  mutate(month=str_sub(yyyymm,5,6)) %>%
-#  mutate(fips_code = as.character(fips_code)) %>%
-#  mutate(fips_code = case_when(str_length(fips_code) < 5  ~ paste0("0",fips_code),
-#                                TRUE ~ fips_code)) %>%
-#  mutate(percent_negative_equity = round(underwater*100,2)) %>%
-#  dplyr::select(zip_code, fips_code, year, month, percent_negative_equity) 
+```
 
+## Load and clean U.S. Census data
 
-# zips by year
-#underwater_zips_year <- underwater_zips %>%
-#  group_by(zip_code, fips_code, year) %>%
-#  summarise(percent_negative_equity = mean(percent_negative_equity)) %>%
-#  mutate(percent_negative_equity = round(percent_negative_equity, 2)) %>%
-#  spread(year, percent_negative_equity) %>%
-#  rename_at(vars(matches("20")), funs(paste0("y", .))) %>%
-#  left_join(underwater_county_year, by=c("fips_code")) %>%
-#  dplyr::select(-contains(".y")) %>%
-#  rename_at(vars(matches(".x$")), funs(str_replace(., ".x",""))) %>%
-#  dplyr::select(zip_code, fips_code, state_name, county_name, everything(), -state_code)
+Select demographic and economic variables via Tidycensus package.
 
-### Load NYT Ruralness thing later
+``` {r}
 
-
-# Load and Clean Census Data
-
-# Census Data
-# Load ZCTA geography data 
+# Load variables for exploration
 # acs_variable <- load_variables(2017, "acs5", cache = TRUE)
 
 # Define census api key
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 
-# Get pct_white, poverty, income data by county
+# Get percent white, percent black, percent hispanic, poverty rate, income data by county
 
 acs_county_white <- get_acs(geography = "county", variables = c("B02001_002"), geometry = FALSE, survey="acs5", year = 2017, summary_var ="B01001_001") %>%
   mutate(pct_white = estimate/summary_est) %>%
@@ -162,22 +157,32 @@ acs_county_income <- get_acs(geography = "county", variables = c("B19013_001"), 
   dplyr::select(GEOID,NAME, median_household_income = estimate) %>%
   clean_names()
 
+# Join the variables into a single data frame
+
 acs_data_county <- acs_county_white %>%
   inner_join(acs_county_black) %>%
   inner_join(acs_county_hispanic) %>%
   inner_join(acs_county_poverty) %>%
-  inner_join(acs_county_income) 
+  inner_join(acs_county_income) %>%
+  mutate(pct_white = round(pct_white*100,2),
+         pct_black = round(pct_black*100,2),
+         pct_hispanic = round(pct_hispanic*100,2),
+         pct_poverty = round(pct_poverty*100,2),
+         )
+  
 
+# Get list of fipscodes from Tigris package
 fips_codes <- fips_codes %>%
   mutate(fips_code = paste0(state_code,county_code)) 
 
+# Join fips codes to table of census variables
 acs_data_county <- acs_data_county %>%
   inner_join(fips_codes, by=c("geoid" = "fips_code"))
 
+# Remove everything except for single acs_data_county table
 rm(list=ls(pattern="acs_county"))
 
-
-# Get pct_white, poverty, income data by zip
+# Get percent white, percent black, percent hispanic, poverty rate, income data by ZCTA
 
 acs_zcta_white <- get_acs(geography = "zcta", variables = c("B02001_002"), geometry = FALSE, survey="acs5", year = 2017, summary_var ="B01001_001") %>%
   mutate(pct_white = estimate/summary_est) %>%
@@ -203,60 +208,175 @@ acs_zcta_income <- get_acs(geography = "zcta", variables = c("B19013_001"), geom
   dplyr::select(GEOID,NAME, median_household_income = estimate) %>%
   clean_names()
 
+# Join the variables into a single data frame
+
 acs_data_zcta <- acs_zcta_white %>%
   inner_join(acs_zcta_black) %>%
   inner_join(acs_zcta_hispanic) %>%
   inner_join(acs_zcta_poverty) %>%
-  inner_join(acs_zcta_income)
+  inner_join(acs_zcta_income) %>%
+  mutate(pct_white = round(pct_white*100,2),
+         pct_black = round(pct_black*100,2),
+         pct_hispanic = round(pct_hispanic*100,2),
+         pct_poverty = round(pct_poverty*100,2),
+         )
+  
 
-rm(list=ls(pattern="acs_zcta"))
+# Remove everything except for single acs_data_zcta table
 
-## Load and Clean Zillow Data
+rm(list=ls(pattern="acs_zcta|fips_codes"))
 
+```
+
+## Load and clean Zillow data
+
+Loading select variables on health and status of real estate market by county and by ZIP code from Zillow.  
+
+```{r}
 
 # https://www.zillow.com/research/data/
-# Home Values summary for Current Month (Oct 2019) by County and ZIP Code (including historical comparison)
+
+# Read in Zillow Region ID to County Crosswalk
+zillow_crosswalk <- read_csv("../data/input_data/zillow/CountyCrossWalk_Zillow.csv") %>%
+  mutate(fips_code = as.character(FIPS)) %>%
+  mutate(fips_code = case_when(str_length(fips_code) < 5  ~ paste0("0",fips_code),
+                                TRUE ~ fips_code)
+         ) %>%
+  dplyr::select(CountyRegionID_Zillow, fips_code) 
+
+# Home values summary for current month (Oct 2019) and historical comparison by county 
+
 county_ZHVI_summary_current_month <- read_csv("../data/input_data/zillow/County_Zhvi_Summary_AllHomes.csv") %>%
-  mutate(five_year = `5Year`,
-         ten_year = `10Year`) %>%
-  dplyr::select(-`5Year`, -`10Year`)
+  mutate(five_year_pct_change = round(`5Year`*100,2),
+         ten_year_pct_change = round(`10Year`*100,2),
+         month_pct_change = round(MoM*100,2),
+         quarter_pct_change = round(QoQ*100,2),
+         year_pct_change = round(YoY*100,2)) %>%
+  inner_join(zillow_crosswalk, by=c("RegionID" = "CountyRegionID_Zillow")) %>%
+  dplyr::select(fips_code, RegionName, State, Zhvi,month_pct_change, quarter_pct_change, year_pct_change, five_year_pct_change, ten_year_pct_change)
+
+
+# Home values summary for current month (Oct 2019) and historical comparison by ZIP
+
 Zip_ZHVI_summary_current_month <- read_csv("../data/input_data/zillow/Zip_Zhvi_Summary_AllHomes.csv") %>%
-  mutate(five_year = `5Year`,
-         ten_year = `10Year`) %>%
-  dplyr::select(-`5Year`, -`10Year`)
+   mutate(five_year_pct_change = round(`5Year`*100,2),
+         ten_year_pct_change = round(`10Year`*100,2),
+         month_pct_change = round(MoM*100,2),
+         quarter_pct_change = round(QoQ*100,2),
+         year_pct_change = round(YoY*100,2)) %>%
+  dplyr::select(zip_code = RegionName, State, Zhvi,month_pct_change, quarter_pct_change, year_pct_change, five_year_pct_change, ten_year_pct_change)
 
 # Year over year ZHVI forecast current month (Oct 2019), all geographics (long sheet, sted wide)
 all_regions_forecasts <- read_csv("../data/input_data/zillow/AllRegionsForePublic-1.csv")
 
+# Create year over year ZHVI forecast just for counties
 county_forecasts <- all_regions_forecasts %>%
   filter(Region == "County")
 
+# Create year over year ZHVI forecast just for ZIP
 zip_forecasts <- all_regions_forecasts %>%
   filter(Region=="Zip")
-
-# Time series home values by County and Zip
-county_ZHVI_time_series <- read_csv("../data/input_data/zillow/County_Zhvi_AllHomes.csv")
-Zip_ZHVI_time_series <- read_csv("../data/input_data/zillow/Zip_Zhvi_AllHomes.csv")
 
 # Join county summary plus forecast
 county_summary_forecast <- county_ZHVI_summary_current_month %>%
   inner_join(county_forecasts, by=c("State" = "StateName","RegionName" = "CountyName")) %>%
-  dplyr::select(-Region, -RegionName.y, -CityName) 
+  mutate(forecast_year_pct_change = round(ForecastYoYPctChange,2)) %>%
+  dplyr::select(-Region, -RegionName.y, -CityName, -ForecastYoYPctChange)
 
 
+# Join ZIP summary plus forecast
+zip_summary_forecast <- Zip_ZHVI_summary_current_month %>%
+  inner_join(zip_forecasts, by=c("zip_code" = "RegionName")) %>%
+  mutate(forecast_year_pct_change = round(ForecastYoYPctChange,2)) %>%
+  dplyr::select(-Region, -StateName, -CountyName, -CityName, -ForecastYoYPctChange) 
 
-# They also have sea level rise data
+# For later analysis Time series home values by County and Zip
+#county_ZHVI_time_series <- read_csv("../data/input_data/zillow/County_Zhvi_AllHomes.csv")
+#Zip_ZHVI_time_series <- read_csv("../data/input_data/zillow/Zip_Zhvi_AllHomes.csv")
 
-# Need to get mortgage data
+# Remove unneeded files
+rm(list=c("county_ZHVI_summary_current_month","Zip_ZHVI_summary_current_month", "all_region_forecasts","zip_forecasts", "county_forecasts", "zillow_crosswalk"))
 
+```
 
-## Load and clean Urban Rural
+# Load and clean misc county data
 
-rural_urban <- read_xls("../data/input_data/rural_urban_codes/ruralurbancodes2013.xls")
+```{r}
 
+# County rural urban code designation from USDA
+# Spectrum from 1 (most urban) to 9 (most rural)
+rural_urban <- read_xls("../data/input_data/rural_urban_codes/ruralurbancodes2013.xls") %>%
+  rename(fips_code = FIPS)
+
+# Mortgage delinquicies
+# Percentage of deliquent mortgages by year on average
+# https://www.consumerfinance.gov/data-research/mortgage-performance-trends/mortgages-30-89-days-delinquent/
+delinquicies <- read_csv("../data/input_data/mortgages/CountyMortgagesPercent-30-89DaysLate-thru-2019-03.csv") %>%
+  filter(RegionType != "National") %>%
+  pivot_longer(cols= "2008-01":"2019-03", names_to="year_month", values_to="pct_late") %>%
+  mutate(year=str_sub(year_month, start=1L, end=4L)) %>%
+  group_by(State, Name, FIPSCode, year) %>%
+  summarise(pct_late = round(mean(pct_late),2)) %>%
+  ungroup() %>%
+  mutate(FIPSCode = str_remove(FIPSCode,"'")) %>%
+  mutate(FIPSCode = str_remove(FIPSCode,"'")) %>%
+  pivot_wider(names_from = year, values_from=pct_late, names_prefix = "pct_late_y")
+  
+```
+
+# Join together everything
+
+```{r}
+## County data frames
+
+# 2446 counties
+county_uw_ts_census_rural <- underwater_county_year %>%
+  ungroup() %>%
+  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
+  dplyr::select(fips_code, state_name = state_name.x, county_name, starts_with("pct")) %>%
+  inner_join(rural_urban) %>%
+  dplyr::select(-State,-Population_2010, -County_Name, -Description)
+
+# 1477 counties
+county_uw_2019_census_rural_zillow <- underwater_county_year %>%
+  ungroup() %>%
+  dplyr::select(state_code:county_name, pct_negative_equity_y2009, pct_negative_equity_y2019) %>%
+  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
+  dplyr::select(fips_code, state_name = state_name.x, county_name, starts_with("pct")) %>%
+  inner_join(rural_urban) %>%
+  dplyr::select(-State,-Population_2010, -County_Name, -Description) %>%
+  inner_join(county_summary_forecast) %>%
+  dplyr::select(-RegionName, -State)
+
+# 469 counties
+county_uw_2019_census_rural_zillow_dq <- underwater_county_year %>%
+  ungroup() %>%
+  dplyr::select(state_code:county_name, pct_negative_equity_y2009, pct_negative_equity_y2019) %>%
+  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
+  dplyr::select(fips_code, state_name = state_name.x, county_name, starts_with("pct")) %>%
+  inner_join(rural_urban) %>%
+  dplyr::select(-State,-Population_2010, -County_Name, -Description) %>%
+  inner_join(county_summary_forecast) %>%
+  dplyr::select(-RegionName, -State) %>%
+  inner_join(delinquicies, by=c("fips_code" = "FIPSCode")) %>%
+  dplyr::select(-State, -Name, -starts_with("pct_late"), pct_late_y2009, pct_late_y2019)
+
+## ZCTA dataframes
+
+zcta_uw_census <- underwater_zips_2019 %>%
+  ungroup() %>%
+  inner_join(acs_data_zcta, by=c("zip_code" = "geoid")) %>%
+  dplyr::select(zip_code, everything(),-name) %>%
+  inner_join(zip_summary_forecast) %>%
+  dplyr::select(-State) 
+
+rm(list=setdiff(ls(), c("county_uw_ts_census_rural", "county_uw_2019_census_rural_zillow", "county_uw_2019_census_rural_zillow_dq", "zcta_uw_census")))
+
+```
 
 ## Load Shapefiles
 
+```{r}
 # ZIP Code Points
 data(zipcode)
 
@@ -270,12 +390,113 @@ counties <- counties(cb = TRUE)
 
 ```
 
+## Explaining the differences
+In general, amongst the highest negative equity zips, there's a general trend.  The higher the rate of af american and hispanics, the higher the rate.
+
+
+```{r}
+zcta_uw_census %>%
+  dplyr::select(-zip_code,-state_name,-county_name) %>%
+  filter(percent_negative_equity >=5) %>%
+  correlate() %>%
+  dplyr::select(rowname, percent_negative_equity)
+
+```
+
+```{r}
+county_uw_ts_census_rural %>%
+  dplyr::select(-fips_code,-state_name,-county_name) %>%
+  #filter(pct_negative_equity_y2019 >=1) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_negative_equity_y2019) %>%
+  arrange(desc(pct_negative_equity_y2019))
+
+```
+
+```{r}
+county_uw_2019_census_rural_zillow %>%
+  dplyr::select(-fips_code,-state_name,-county_name) %>%
+  filter(pct_negative_equity_y2019 >=1) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_negative_equity_y2019) %>%
+  arrange(desc(pct_negative_equity_y2019))
+
+```
+
+```{r}
+county_uw_2019_census_rural_zillow_dq %>%
+  dplyr::select(-fips_code,-state_name,-county_name) %>%
+  #filter(pct_negative_equity_y2019 >=1) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_negative_equity_y2019) %>%
+  arrange(desc(pct_negative_equity_y2019))
+
+```
+
+```{r}
+
+### Need to add in home price appreciation and mortgage origination as percentage of application
+# Pull in NYT classification of urban rural
+
+underwater_zips_2019_join <- underwater_zips_2019 %>%
+  inner_join(acs_data_zcta, by=c("zip_code" = "geoid")) %>%
+  inner_join(Zip_ZHVI_summary_current_month, by=c("zip_code" = "RegionName")) %>% 
+  #%>%
+  #filter(!is.na(percent_negative_equity),
+   #      pct_white != "NaN",
+   #      !is.na(median_household_income)) %>%
+  filter(percent_negative_equity >=5) 
+ 
+corr_table_zcta <- underwater_zips_2019_join %>%
+  dplyr::select(-matches("code|name|Date|Region|State|Metro|County|City|Month|Quarter|Last|Time")) %>%
+  dplyr::select(matches("percent|pct|year")) %>%
+  correlate() %>%
+  dplyr::select(rowname, percent_negative_equity)
+
+print(corr_table_zcta)
+#https://www.dataquest.io/blog/statistical-learning-for-predictive-modeling-r/
+#install.packages("moderndive")
+
+score_model <- lm(percent_negative_equity ~ pct_white+pct_black+pct_hispanic+PctFallFromPeak, data = underwater_zips_2019_join)
+get_regression_table(score_model) %>% datatable()
+get_regression_summaries(score_model) %>% datatable()
+
+ggplot(underwater_zips_2019_join) +
+  geom_point(aes(percent_negative_equity, pct_white)) +
+  labs(x="Percent Negative Equity", y="Percent White", title="", caption = "") +
+  geom_smooth(aes(percent_negative_equity, pct_white), method = "lm", se = FALSE) 
+
+ggplot(underwater_zips_2019_join) +
+  geom_point(aes(percent_negative_equity, pct_black)) +
+  labs(x="Percent Negative Equity", y="Percent Black", title="", caption = "") +
+  geom_smooth(aes(percent_negative_equity, pct_black), method = "lm", se = FALSE) 
+
+ggplot(underwater_zips_2019_join) +
+  geom_point(aes(percent_negative_equity, pct_hispanic)) +
+  labs(x="Percent Negative Equity", y="Percent Hispanic", title="", caption = "") +
+  geom_smooth(aes(percent_negative_equity, pct_hispanic), method = "lm", se = FALSE) 
+
+
+
+```
+
 # Analysis
 
 In the average and median U.S. county, underwater rates nowhere near as high as they used to be in the years immediately following the crash of the housing market. In 2009, the average U.S. county had 5.5 percent of homes with negative equity, compared to 1.52 percent today.  The median showed a less dramatic decline. The 2009 mean is skewed up by some extremely high rates in select counties in 2009.  
 
 ```{r}
 underwater_county_year %>%
+  pivot_longer(cols=c("y2009", "y2010", "y2011", "y2012","y2013","y2014","y2015","y2016","y2017","y2018","y2019"), names_to = "year", values_to = "percent_negative_equity") %>%
+  group_by(year) %>%
+  filter(!is.na(percent_negative_equity)) %>%
+  summarise(median_percent_negative_equity = round(median(percent_negative_equity),2),
+            mean_percent_negative_equity = round(mean(percent_negative_equity),2)
+            )
+```
+
+```{r}
+underwater_county_year %>%
+  filter(y2009 > 0) %>%
   pivot_longer(cols=c("y2009", "y2010", "y2011", "y2012","y2013","y2014","y2015","y2016","y2017","y2018","y2019"), names_to = "year", values_to = "percent_negative_equity") %>%
   group_by(year) %>%
   filter(!is.na(percent_negative_equity)) %>%

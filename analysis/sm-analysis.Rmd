@@ -129,6 +129,28 @@ underwater_zips_year
 ### Load NYT Ruralness thing
 
 
+# Time series zips
+#underwater_zips <- read_csv("../data/input_data/zip_negative_equity_extended.csv") %>%
+#  mutate(year=str_sub(yyyymm, 1,4)) %>%
+#  mutate(month=str_sub(yyyymm,5,6)) %>%
+#  mutate(fips_code = as.character(fips_code)) %>%
+#  mutate(fips_code = case_when(str_length(fips_code) < 5  ~ paste0("0",fips_code),
+#                                TRUE ~ fips_code)) %>%
+#  mutate(percent_negative_equity = round(underwater*100,2)) %>%
+#  dplyr::select(zip_code, fips_code, year, month, percent_negative_equity) 
+
+
+# zips by year
+#underwater_zips_year <- underwater_zips %>%
+#  group_by(zip_code, fips_code, year) %>%
+#  summarise(percent_negative_equity = mean(percent_negative_equity)) %>%
+#  mutate(percent_negative_equity = round(percent_negative_equity, 2)) %>%
+#  spread(year, percent_negative_equity) %>%
+#  rename_at(vars(matches("20")), funs(paste0("y", .))) %>%
+#  left_join(underwater_county_year, by=c("fips_code")) %>%
+#  dplyr::select(-contains(".y")) %>%
+#  rename_at(vars(matches(".x$")), funs(str_replace(., ".x",""))) %>%
+#  dplyr::select(zip_code, fips_code, state_name, county_name, everything(), -state_code)
   
 ```
 
