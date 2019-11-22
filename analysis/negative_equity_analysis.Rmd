@@ -76,9 +76,11 @@ flattenCorrMatrix <- function(cormat, pmat) {
 }
 ```
 
+
 ## Load and clean negative equity data
 
 Data on negative equity via CoreLogic.  Two data sets: negative equity share of all homes by county by month-year from 2009 to present; negative equity share of all homes by ZIP code for unknown month in 2019 (have a call in).  We are waiting for a third data set, which they sent to us, but had errors I identified (only had data for four states), of negative equity share of all homes by ZIP code by month-year from 2009-present. I've also reached out to Zillow for additional data.
+
 
 ```{r}
 
@@ -403,6 +405,77 @@ rm(list=setdiff(ls(), c("county_uw_ts_census_rural", "county_uw_2019_census_rura
 
 ```
 
+
+## Load and clean zillow data from data.world
+Strategy
+What are the ramifications of negative equity?
+
+Negative equity can cast a shadow over the economy, effectively prolonging an economic downturn. Just as skyrocketing home values can drive confidence and spending, negative equity can keep people home, literally. Many people who might have found jobs in other markets were tied to their homes and unable to sell because the money they would make from selling would not be enough to pay off their mortgages. Negative equity can have a number of other chilling impacts on local housing markets, disproportionately impacting minority communities and owners of lower-valued homes, exacerbating inventory shortages and increasing the likelihood of foreclosure for underwater homeowners.
+# https://www.zillow.com/research/negative-equity-race-q3-2016-14063/
+# https://www.zillow.com/research/q3-2016-negative-equity-report-13954/
+
+
+https://www.zillow.com/research/q3-2016-negative-equity-report-13954/
+But this drop, while encouraging, masks the often very wide divide that remains between the top of the market and the bottom of the market. In a number of large markets, the spread between the negative equity rate at the top and the bottom of the market is alarmingly wide. In Detroit, for example, the negative equity rate among top-tier homes is 4.4 percent; among bottom-tier homes, the negative equity rate is almost ten times higher at 39 percent – a gap of 34.6 percentage points, the largest gap among the 35 largest metros analyzed. The gap between top-tier and bottom-tier negative equity is more than 20 percentage points in an additional four large metros: Cleveland (28.1 points), St. Louis (22 points), Atlanta (21 points) and Chicago (20.5 points).
+
+
+
+```{r}
+# https://datadotworld.github.io/data.world-r/r-rstudio.html
+# install.packages('data.world')
+library(data.world)
+
+# Store token
+saved_cfg <- data.world::save_config("eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyLWFuZC1yLXN0dWRpbzpzbXVzc2VuZGVuIiwiaXNzIjoiY2xpZW50OnItYW5kLXItc3R1ZGlvOmFnZW50OnNtdXNzZW5kZW46OmE1YWFmYjRhLTM4NTItNDc4Mi05Y2JjLTgzMDVmN2UyZWE5MCIsImlhdCI6MTU3NDQ1NzczMCwicm9sZSI6WyJ1c2VyX2FwaV9hZG1pbiIsInVzZXJfYXBpX3JlYWQiLCJ1c2VyX2FwaV93cml0ZSJdLCJnZW5lcmFsLXB1cnBvc2UiOnRydWUsInNhbWwiOnt9fQ.9dc8h4PyGmm3CQcEgoG8fTFsA-Qz8nYNkCd39CiWRrUQV5slhWNBGra82yFQhQuwCfvdfZlL06utF1zaJxoNlw")
+data.world::set_config(saved_cfg)
+
+# Define path to dataset
+negative_equity_summary_url <- "https://data.world/zillow-data/negative-equity-summary"
+# Define query to load dataset
+negative_equity_summary_query <- data.world::qry_sql("SELECT * FROM NESummary_2017Q1_Public")
+# Get data
+negative_equity_summary <- data.world::query(negative_equity_summary_query, dataset = negative_equity_summary_url)
+# Filter by county
+negative_equity_summary_county <- negative_equity_summary %>%
+  filter(regiontype == "County")
+# Filter by zip
+negative_equity_summary_zip <- negative_equity_summary %>%
+  filter(regiontype == "Zip")
+
+# Join to county data  
+
+x <- negative_equity_summary_county %>%
+  inner_join(zillow_crosswalk, by=c("regionid" = "CountyRegionID_Zillow")) %>%
+  dplyr::select(fips_code, everything()) %>%
+  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
+  mutate(majority_minority = case_when(pct_white < 50 ~ TRUE,
+                                       TRUE ~ FALSE))
+
+# Averages
+
+y <- x %>%
+  group_by(majority_minority) %>%
+  summarise_if(is.numeric, mean, na.rm=TRUE)
+
+# Correlate
+
+x %>%
+  select_if(is.numeric) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_white, pct_black, pct_hispanic, median_household_income) %>%
+  mutate(abs_pct_white=abs(pct_white)) %>%
+  arrange(desc(abs_pct_white)) %>%
+  dplyr::select(-abs_pct_white)
+select_i
+
+
+https://data.world/zillow-data/negative-equity-tiers
+https://data.world/zillow-data/negative-equity-summary
+https://data.world/zillow-data/negative-equity-time-series
+https://data.world/zillow-data/negative-equity-summary
+
+```
+
 ## Load Shapefiles
 
 ```{r}
@@ -427,7 +500,8 @@ In general, amongst the highest negative equity zips, there's a general trend.  
 # Remove non-numerical columns, and eliminate less significant negative equity zips
 zcta_uw_census_trimmed <- zcta_uw_census %>%
   dplyr::select(-zip_code,-state_name,-county_name) %>%
-  filter(percent_negative_equity >=5) 
+  filter(percent_negative_equity >=5) %>%
+  mutate(log_median_household_income = log(median_household_income))
 
 # Create correlation matrix
 zcta_uw_census_correlation_matrix <- rcorr(as.matrix(zcta_uw_census_trimmed))
@@ -485,14 +559,25 @@ graph_data <- zcta_uw_census_trimmed %>%
   gather(-percent_negative_equity, key = "var", value = "value") %>%
   inner_join(zcta_uw_census_correlation_matrix, by=c("var" = "column")) %>%
   dplyr::select(-row, -cor, -p) %>%
-  ggscatter(x="value", y="percent_negative_equity", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE, mean.point = TRUE) +
+  ggscatter(x="value", y="percent_negative_equity", add="loess", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE, mean.point = TRUE) +
   stat_cor(method = "pearson", label.x = 0, label.y = 25)
 
-facet(graph_data, facet.by="var", scales="free_x", ncol=3)
-    
+facet(graph_data, facet.by="var", scales="free_x", ncol=4)
+
 ```
 
 ```{r}
+
+# Data.world in R -- lets build a model for q12017 that explains everything.  Use it to update for now. 
+
+
+# https://data.world/zillow-data
+# Let's build a model using this rate https://data.world/zillow-data/negative-equity-summary
+# https://data.world/zillow-data/negative-equity-tiers
+# https://www.census.gov/content/dam/Census/programs-surveys/ahs/publications/Drowning_in_Debt.pdf
+# Owner to renter
+# https://data.world/zillow-data/negative-equity-time-series
+
 # Remove non-numerical columns, and eliminate less significant negative equity zips
 county_uw_ts_census_rural_trimmed <- county_uw_ts_census_rural %>%
   dplyr::select(-fips_code,-state_name,-county_name, -pct_negative_equity_y2010, -pct_negative_equity_y2011, -pct_negative_equity_y2012, -pct_negative_equity_y2013, -pct_negative_equity_y2014, -pct_negative_equity_y2015, -pct_negative_equity_y2016, -pct_negative_equity_y2017, -pct_negative_equity_y2018) 
@@ -531,7 +616,7 @@ get_regression_summaries(county_uw_ts_census_rural_linear_model_all) %>%
   datatable() 
 
 # Select variables
-county_uw_ts_census_rural_linear_model_select <- lm(pct_negative_equity_y2019 ~ pct_white, data = county_uw_ts_census_rural_trimmed)
+county_uw_ts_census_rural_linear_model_select <- lm(pct_negative_equity_y2019 ~ pct_white+pct_negative_equity_y2009+pct_poverty+pct_black+pct_hispanic, data = county_uw_ts_census_rural_trimmed)
 
 # Print a summary of the model with select variables
 summary(county_uw_ts_census_rural_linear_model_select)
@@ -561,6 +646,11 @@ graph_data <- zcta_uw_census_trimmed %>%
 
 facet(graph_data, facet.by="var", scales="free_x", ncol=3)
 ```
+
+```{r}
+
+```
+
 
 
 ```{r}
