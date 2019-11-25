@@ -448,7 +448,7 @@ x <- negative_equity_summary_county %>%
   inner_join(zillow_crosswalk, by=c("regionid" = "CountyRegionID_Zillow")) %>%
   dplyr::select(fips_code, everything()) %>%
   inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
-  mutate(majority_minority = case_when(pct_white < 50 ~ TRUE,
+  mutate(majority_minority = case_when(pct_white < 75 ~ TRUE,
                                        TRUE ~ FALSE))
 
 # Averages
@@ -469,10 +469,145 @@ x %>%
 select_i
 
 
-https://data.world/zillow-data/negative-equity-tiers
-https://data.world/zillow-data/negative-equity-summary
-https://data.world/zillow-data/negative-equity-time-series
-https://data.world/zillow-data/negative-equity-summary
+# https://data.world/zillow-data/negative-equity-tiers
+#https://data.world/zillow-data/negative-equity-summary
+#https://data.world/zillow-data/negative-equity-time-series
+#https://data.world/zillow-data/negative-equity-summary
+#HOLY SHIT THERE S A FUCKING MODEL ON PAGE 14 that has everything I need. #https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
+
+# ZIP Codes
+
+# Get list of states
+states <- state.abb 
+
+# Take out texas, Vermont
+states <- states[!states %in% c("TX", "VT", "WY")]  
+  
+# Just for testing
+# states <- c("AL", "AK")
+
+negative_equity_summary_acs_zip <- negative_equity_summary_zip %>%
+  inner_join(acs_data_zcta, by=c("regionname" = "geoid")) %>%
+  mutate(majority_minority = case_when(pct_white < 50 ~ TRUE,
+                                       TRUE ~ FALSE))
+
+
+# Make an empty dataframe
+negative_equity_acs_zip_regressions <- tibble(
+  state_eff_neg_eq= character(), 
+  pct_white = double(),
+  pct_black = double(),
+  pct_hispanic = double(),
+  median_household_income = double(),
+  pct_poverty = double()
+  )
+
+# Make an empty dataframe 
+
+negative_equity_acs_zip_averages <- tibble(
+ state =character(),
+ majority_minority =logical(),
+ regionid=double(),
+ sizerank=double(),
+ total_amount_of_negative_equity_millions=double(),
+ total_number_of_homes_in_negative_equity=double(), 
+ negative_equity_percent_of_homes_w_mortgage =double(), 
+ number_of_homes_at_least_90_days_late =double(), 
+ negative_equity_deliquency_rate =double(), 
+ `2017q1_zhvi` =double(), 
+ zhvi_change_from_peak =double(), 
+ ne_ltv_of_100_120 =double(), 
+ ne_ltv_of_120_140 =double(), 
+ ne_ltv_of_140_160 =double(), 
+ ne_ltv_of_160_180 =double(), 
+ ne_ltv_of_180_200 =double(), 
+ ne_ltv_of_200 =double(), 
+ ltv_of_40 =double(), 
+ ltv_of_40_60=double(), 
+ ltv_of_60_80=double(),
+ ltv_of_80_100 =double(), 
+ ltv_of_100_120=double(), 
+ ltv_of_120_140=double(),
+ ltv_of_140_160=double(),
+ ltv_of_160_180=double(),
+ ltv_of_180_200=double(),
+ ltv_of_200=double(), 
+ effective_negative_equity_rate=double(), 
+ pct_white =double(),
+ pct_black =double(), 
+ pct_hispanic=double(),
+ pct_poverty =double(),
+ median_household_income =double()
+)
+
+# Run the for loop
+for (state in states) {
+
+  print(state)
+  
+  temp <- negative_equity_summary_acs_zip %>%
+  filter(state==!!enquo(state)) %>%
+  select_if(is.numeric) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_white, pct_black, pct_hispanic, median_household_income, pct_poverty) %>%
+  mutate(abs_pct_white=abs(pct_white)) %>%
+  arrange(desc(abs_pct_white)) %>%
+  dplyr::select(-abs_pct_white) %>%
+  filter(rowname == "effective_negative_equity_rate") %>%
+  mutate(state_eff_neg_eq = state) %>%
+  dplyr::select(state_eff_neg_eq, everything(), -rowname)
+  
+  negative_equity_acs_zip_regressions <- negative_equity_acs_zip_regressions %>%
+      bind_rows(temp)
+  
+  temp2 <- negative_equity_summary_acs_zip  %>%
+  filter(state==!!enquo(state)) %>%  
+  group_by(majority_minority) %>%
+  summarise_if(is.numeric, mean, na.rm=TRUE) %>%
+  mutate(state = state) %>%
+  dplyr::select(state, everything())
+  
+  negative_equity_acs_zip_averages <-  negative_equity_acs_zip_averages %>%
+    bind_rows(temp2) 
+
+}
+
+
+
+x <- negative_equity_summary_zip %>%
+  inner_join(acs_data_zcta, by=c("regionname" = "geoid")) %>%
+  mutate(majority_minority = case_when(pct_white < 50 ~ TRUE,
+                                       TRUE ~ FALSE)) #%>%
+  #filter(state=="MD")
+y <- x %>%
+  group_by(majority_minority) %>%
+  summarise_if(is.numeric, mean, na.rm=TRUE)
+
+# Correlate
+
+x %>%
+  select_if(is.numeric) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_white, pct_black, pct_hispanic, median_household_income, pct_poverty) %>%
+  mutate(abs_pct_white=abs(pct_white)) %>%
+  arrange(desc(abs_pct_white)) %>%
+  dplyr::select(-abs_pct_white) %>%
+  filter(rowname == "effective_negative_equity_rate")
+  
+
+negative_equity_summary_zip 
+# Percent black
+# Percent non-white hispanic
+# Median Household Income
+# Mean commute time
+# Owner occupied rate
+#Averate age of housing - don't have
+#Homeowner vacancy rate - don't have
+#rental vacancy rate  - don't have
+# Percent subprime loans at peak - don't have
+# Percent foreclosure rate - don't have
+# Home price decline from peak - HAVE ZHVI change from peak
+
 
 ```
 
