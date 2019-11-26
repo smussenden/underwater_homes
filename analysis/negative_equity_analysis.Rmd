@@ -57,7 +57,7 @@ library(tidycensus)
 library(corrr)
 library(moderndive)
 library(Hmisc)
-
+library(broom)
 # For graphics
 library(scales)
 library(ggthemes)
@@ -428,7 +428,7 @@ library(data.world)
 # Store token
 saved_cfg <- data.world::save_config("eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyLWFuZC1yLXN0dWRpbzpzbXVzc2VuZGVuIiwiaXNzIjoiY2xpZW50OnItYW5kLXItc3R1ZGlvOmFnZW50OnNtdXNzZW5kZW46OmE1YWFmYjRhLTM4NTItNDc4Mi05Y2JjLTgzMDVmN2UyZWE5MCIsImlhdCI6MTU3NDQ1NzczMCwicm9sZSI6WyJ1c2VyX2FwaV9hZG1pbiIsInVzZXJfYXBpX3JlYWQiLCJ1c2VyX2FwaV93cml0ZSJdLCJnZW5lcmFsLXB1cnBvc2UiOnRydWUsInNhbWwiOnt9fQ.9dc8h4PyGmm3CQcEgoG8fTFsA-Qz8nYNkCd39CiWRrUQV5slhWNBGra82yFQhQuwCfvdfZlL06utF1zaJxoNlw")
 data.world::set_config(saved_cfg)
-
+# https://data.world/zillow-data/all-zillow-metrics-zip-code/workspace/file?filename=Zip%2FBuyerSellerIndex_Zip.csv
 # Define path to dataset
 negative_equity_summary_url <- "https://data.world/zillow-data/negative-equity-summary"
 # Define query to load dataset
@@ -442,31 +442,22 @@ negative_equity_summary_county <- negative_equity_summary %>%
 negative_equity_summary_zip <- negative_equity_summary %>%
   filter(regiontype == "Zip")
 
-# Join to county data  
+#### NEXT DATA SET
 
-x <- negative_equity_summary_county %>%
-  inner_join(zillow_crosswalk, by=c("regionid" = "CountyRegionID_Zillow")) %>%
-  dplyr::select(fips_code, everything()) %>%
-  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
-  mutate(majority_minority = case_when(pct_white < 75 ~ TRUE,
-                                       TRUE ~ FALSE))
+market_health_zip_url <- "https://data.world/zillow-data/all-zillow-metrics-zip-code/"
+# Define query to load dataset
+market_health_zip_query <- data.world::qry_sql(" SELECT * FROM markethealthindex_zip")
+# Get data
+market_health_zip_summary <- data.world::query(market_health_zip_query, dataset = market_health_zip_url)
 
-# Averages
 
-y <- x %>%
-  group_by(majority_minority) %>%
-  summarise_if(is.numeric, mean, na.rm=TRUE)
 
-# Correlate
 
-x %>%
-  select_if(is.numeric) %>%
-  correlate() %>%
-  dplyr::select(rowname, pct_white, pct_black, pct_hispanic, median_household_income) %>%
-  mutate(abs_pct_white=abs(pct_white)) %>%
-  arrange(desc(abs_pct_white)) %>%
-  dplyr::select(-abs_pct_white)
-select_i
+
+https://data.world/zillow-data/all-zillow-metrics-zip-code/workspace/file?filename=Zip%2FBuyerSellerIndex_Zip.csv
+
+
+
 
 
 # https://data.world/zillow-data/negative-equity-tiers
@@ -485,6 +476,7 @@ states <- states[!states %in% c("TX", "VT", "WY")]
   
 # Just for testing
 # states <- c("AL", "AK")
+# state <- "CT"
 
 negative_equity_summary_acs_zip <- negative_equity_summary_zip %>%
   inner_join(acs_data_zcta, by=c("regionname" = "geoid")) %>%
@@ -540,6 +532,20 @@ negative_equity_acs_zip_averages <- tibble(
  median_household_income =double()
 )
 
+# Make empty dataframe
+negative_equity_acs_zip_models <- tibble(
+state=character(),
+r.squared=double(),
+adj.r.squared=double(),
+p.value=character(),
+intercept=character(),
+pct_white=character(),
+pct_black=character(),
+pct_poverty=character(),
+median_household_income=character(),
+pct_hispanic=character()
+)
+
 # Run the for loop
 for (state in states) {
 
@@ -569,8 +575,73 @@ for (state in states) {
   
   negative_equity_acs_zip_averages <-  negative_equity_acs_zip_averages %>%
     bind_rows(temp2) 
+  
+
+  # Filter out each state
+temp3 <- negative_equity_summary_acs_zip %>%
+  filter(state==!!enquo(state)) 
+
+# Build a linear model with all of our variables
+temp3 <- lm(effective_negative_equity_rate~pct_white+pct_black+pct_poverty+median_household_income+pct_hispanic, data=temp3)
+
+# Create a tidy dataframe with significance of each variable in a LM
+temp3_tidy <- tidy(temp3) %>%
+  mutate(state=!!enquo(state)) %>%
+  dplyr::select(state, everything(), -estimate, -std.error,-statistic) %>%
+  mutate(p.value = case_when(p.value < .05 ~ "sig",
+                             TRUE ~ 'not sig')) %>%
+  pivot_wider(names_from = term, values_from = p.value) %>%
+  rename(intercept = `(Intercept)`)
+
+
+# Create a tidy dataframe with overall performance of model
+temp3_glance <- glance(temp3) %>%
+  mutate(state=!!enquo(state)) %>%
+  dplyr::select(state, r.squared, adj.r.squared, p.value) %>%
+  mutate(p.value = case_when(p.value < .05 ~ "sig",
+                             TRUE ~ 'not sig'))
+
+# Join the two together
+temp3_join <- temp3_glance %>%
+  inner_join(temp3_tidy, by=c("state"))
+
+# Bind to our empty dataframe
+negative_equity_acs_zip_models <- negative_equity_acs_zip_models %>%
+  bind_rows(temp3_join)
 
 }
+
+# Filter out each state
+temp3 <- negative_equity_summary_acs_zip %>%
+  filter(state==!!enquo(state)) 
+
+# Build a linear model with all of our variables
+temp3 <- lm(effective_negative_equity_rate~pct_white+pct_black+pct_poverty+median_household_income+pct_hispanic, data=temp3)
+  
+# Create a tidy dataframe with significance of each variable in a LM
+temp3_tidy <- tidy(test) %>%
+  mutate(state=!!enquo(state)) %>%
+  dplyr::select(state, everything(), -estimate, -std.error,-statistic) %>%
+  mutate(p.value = case_when(p.value < .05 ~ "sig",
+                             TRUE ~ 'not sig')) %>%
+  pivot_wider(names_from = term, values_from = p.value) %>%
+  rename(intercept = `(Intercept)`)
+
+
+# Create a tidy dataframe with overall performance of model
+temp3_glance <- glance(test) %>%
+  mutate(state=!!enquo(state)) %>%
+  dplyr::select(state, r.squared, adj.r.squared, p.value) %>%
+  mutate(p.value = case_when(p.value < .05 ~ "sig",
+                             TRUE ~ 'not sig'))
+
+# Join the two together
+temp3_join <- temp3_glance %>%
+  inner_join(temp3_tidy, b=c("state"))
+
+# Bind to our empty dataframe
+negative_equity_acs_zip_models <- negative_equity_acs_zip_models %>%
+  bind_rows(temp3_join)
 
 
 
@@ -608,6 +679,32 @@ negative_equity_summary_zip
 # Percent foreclosure rate - don't have
 # Home price decline from peak - HAVE ZHVI change from peak
 
+
+# Join to county data  
+
+x <- negative_equity_summary_county %>%
+  inner_join(zillow_crosswalk, by=c("regionid" = "CountyRegionID_Zillow")) %>%
+  dplyr::select(fips_code, everything()) %>%
+  inner_join(acs_data_county, by=c("fips_code" = "geoid")) %>%
+  mutate(majority_minority = case_when(pct_white < 75 ~ TRUE,
+                                       TRUE ~ FALSE))
+
+# Averages
+
+y <- x %>%
+  group_by(majority_minority) %>%
+  summarise_if(is.numeric, mean, na.rm=TRUE)
+
+# Correlate
+
+x %>%
+  select_if(is.numeric) %>%
+  correlate() %>%
+  dplyr::select(rowname, pct_white, pct_black, pct_hispanic, median_household_income) %>%
+  mutate(abs_pct_white=abs(pct_white)) %>%
+  arrange(desc(abs_pct_white)) %>%
+  dplyr::select(-abs_pct_white)
+select_i
 
 ```
 
