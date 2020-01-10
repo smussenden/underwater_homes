@@ -442,6 +442,8 @@ negative_equity_summary_county <- negative_equity_summary %>%
 negative_equity_summary_zip <- negative_equity_summary %>%
   filter(regiontype == "Zip")
 
+# write.csv(negative_equity_summary_zip, "negative_equity_summary_zip.csv")
+
 #### NEXT DATA SET
 
 market_health_zip_url <- "https://data.world/zillow-data/all-zillow-metrics-zip-code/"
