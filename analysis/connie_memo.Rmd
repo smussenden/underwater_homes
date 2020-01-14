@@ -690,7 +690,11 @@ datatable(high_negative_equity_county_2019, class = 'cell-border stripe', filter
 
 ### Negative equity clusters in 2019 
 
-For comparison, this is every county in the U.S. in 2009 with a negative equity rate above 4 percent, 654 counties.  That's about 25 percent of counties.  The problem was much more widespread following the financial crisis. 
+For comparison, this is every county in the U.S. in 2009 with a negative equity rate above 4 percent, 654 counties in total.  The negative equity problem was much more widespread following the financial crisis. 
+
+Click on each county to see detailed data for that county.
+
+To see the code that makes this map, click "Code" to expand. 
 
 ```{r}
 
@@ -739,7 +743,9 @@ leaflet(high_negative_equity_county_2009_geo) %>%
 )
 
 ```
+Below is a table with the same information that populates the map, for exploration. 
 
+To see the code that makes this table, click "Code" to expand. 
 ```{r}
 
 datatable(high_negative_equity_county_2009, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
@@ -750,7 +756,12 @@ datatable(high_negative_equity_county_2009, class = 'cell-border stripe', filter
 )
 ```
 
-This map shows 2009 negative equity rates in counties to shows only the top 89 counties in 2009 (the same number of counties with > 4 percent negative equity in 2019). It allows us to see which places were the most problematic in 2009. 
+In order to see where the problem was most pronounced in 2009, this map shows the top 89 negative equity rate counties in 2009. That's the same number above 4 percent in 2019. But, of course, the rates are much higher for these 89 counties. 
+
+Click on each county to see detailed data for that county.
+
+To see the code that makes this map, click "Code" to expand. 
+
 ```{r}
 # Filter for 2009
 top_negative_equity_county_2009 <- underwater_county_year_no_zillow %>%
@@ -769,7 +780,7 @@ binpal <- colorBin("plasma", top_negative_equity_county_2009_geo$pct_negative_eq
 leaflet(top_negative_equity_county_2009_geo) %>%
    addProviderTiles(providers$CartoDB.Positron) %>%
    #addProviderTiles(providers$Wikimedia) %>%
-   addPolygons(fillColor = ~binpal(pct_negative_equity_y2009), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(high_negative_equity_county_2009_geo)) %>%
+   addPolygons(fillColor = ~binpal(pct_negative_equity_y2009), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(top_negative_equity_county_2009_geo)) %>%
    setView(-95, 39.335359608681216, 4) %>%
    addLegend("bottomleft", 
              pal = binpal, 
@@ -807,7 +818,15 @@ datatable(top_negative_equity_county_2009, class = 'cell-border stripe', filter 
 )
 ```
 
-There's not a lot of crossover. Only 13 counties on the list of the highest negative equity counties in 2009 were also there in 2019, including two Maryland counties.  
+Below is a table with the same information that populates the map, for exploration. 
+
+To see the code that makes this table, click "Code" to expand. 
+
+### Problem counties in 2009 and 2019
+
+There's not a lot of crossover between problematic counties in 2009 and 2019. Only 13 counties that were on the list of the highest negative equity counties in 2009 were also there in 2019, including two Maryland counties.  
+
+To see the code that makes this table, click "Code" to expand. 
 
 ```{r}
 
