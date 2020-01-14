@@ -40,6 +40,9 @@ The analysis also seeks to identify demographic and economic features shared by 
 * In general, communities with larger minority populations (specifically African-Americans and Hispanics) have higher rates of negative equity, though there are exceptions.  
 * Many communities with the highest rates of underwater mortgages in 2009 are not on the list of problem areas in 2019, but there are exceptions.  Prince George's County, in Maryland, for example, was among the biggest trouble spots in 2009 and remained so in 2019. 
 
+## Other readings
+https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
+
 ## Load Packages, Define Functions, Change Settings 
 
 Code to set up workspace for data work.  Click "Code" to expand if you need to see it. 
