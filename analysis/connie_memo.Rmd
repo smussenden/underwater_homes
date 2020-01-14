@@ -205,7 +205,7 @@ negative_equity_summary_zip <- negative_equity_summary %>%
 
 ### Demographic and economic data
 
-We pulled the race, income and poverty data points for U.S. ZIP Codes and counties from the U.S. Census American Community Survey product for 2017, the most recent available year via the Tidycensus package. To see the code that loads and cleans the data, click "Code" to expand. 
+We pulled race, income and poverty data points for U.S. ZIP Codes and counties from the U.S. Census American Community Survey product for 2017, the most recent available year via the Tidycensus package. To see the code that loads and cleans the data, click "Code" to expand. 
 
 
 ``` {r include=FALSE}
@@ -417,7 +417,6 @@ rm(list=c("county_ZHVI_summary_current_month","Zip_ZHVI_summary_current_month", 
 
 ```
 
-
 ### Urban-rural characteristic and unemployment data
 
 We obtained from the USDA a classification system that defines each county on a scale from 1 (most urban) to 9 (most rural).  Unemployment data is via Bureau of Labor Statistics, 2018 average by county. To see the code that loads and cleans the data, click "Code" to expand. 
@@ -511,7 +510,7 @@ counties <- counties(cb = TRUE)
 
 The rest of this document describes findings in details. 
 
-## Negative equity clusters in 2019 
+### Negative equity clusters in 2019 
 
 Though negative equity rates are nowhere near 2009 levels, the analysis identified 10 prominent clusters with higher negative equity rates relative to the rest of the country.  
 
@@ -593,17 +592,28 @@ leaflet(high_negative_equity_zips_geo) %>%
 
 ```
 
+Below is a table with the same information that populates the map, for exploration. 
+
+To see the code that makes this table, click "Code" to expand. 
+
+
 ```{r}
 
 datatable(high_negative_equity_zips, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
     style = 'caption-side: top; text-align: left;',
-    '2019: ZIP codes with negative equity >= 4%'
+    '2019: ZIP codes with negative equity >= 5%'
   ),
   options = list(scrollX=TRUE, scrollCollapse=TRUE)
 )
 ```
 
-This map shows county-level averages. There were 89 counties with a negative equity rate above 4 percent in 2019.
+Instead of ZIP codes, this map shows county-level averages. There were 89 counties with a negative equity rate above 4 percent in 2019, as shown on this map. 
+
+In the map below, click on the two-letter buttons at right to zoom to that cluster. 
+
+Click on each county to see detailed data for that county.
+
+To see the code that makes this map, click "Code" to expand. 
 
 ```{r}
 
@@ -665,6 +675,9 @@ leaflet(high_negative_equity_county_2019_geo) %>%
 
 ```
 
+Below is a table with the same information that populates the map, for exploration. 
+
+To see the code that makes this table, click "Code" to expand. 
 ```{r}
 
 datatable(high_negative_equity_county_2019, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
@@ -675,7 +688,9 @@ datatable(high_negative_equity_county_2019, class = 'cell-border stripe', filter
 )
 ```
 
-By comparison, this is every county in the U.S. in 2009 with a negative equity rate above 4 percent, 654 counties.  That's about 25 percent of counties.  The problem was much more widespread following the financial crisis. 
+### Negative equity clusters in 2019 
+
+For comparison, this is every county in the U.S. in 2009 with a negative equity rate above 4 percent, 654 counties.  That's about 25 percent of counties.  The problem was much more widespread following the financial crisis. 
 
 ```{r}
 
