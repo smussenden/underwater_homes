@@ -844,9 +844,15 @@ datatable(on_both, class = 'cell-border stripe', filter = 'top', rownames = FALS
 ```
 
 
-## Historical Comparisons
+### 2019 is not nearly as bad as 2009
 
-In the average and median U.S. county, underwater rates nowhere near as high as they used to be in the years immediately following the crash of the housing market. In 2009, the average U.S. county had 5.5 percent of homes with negative equity, compared to 1.52 percent today.  The median showed a less dramatic decline. The 2009 mean is skewed up by some extremely high rates in select counties in 2009.  
+On average, underwater rates are nowhere near as high as they used to be in the years immediately following the crash of the housing market. 
+
+In 2009, the average U.S. county had 5.5 percent of homes in negative equity, compared to 1.62 last year. A large number of very high negative equities skewed the mean in 2009.  The median was much less pronounced.
+
+In 2009, the median U.S. county had 2.2 percent of homes in negative equity, compared to 1.3 percent in 2019.
+
+To see the code that makes this table, click "Code" to expand. 
 
 ```{r}
 
