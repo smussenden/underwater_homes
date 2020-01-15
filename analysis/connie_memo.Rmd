@@ -41,7 +41,7 @@ The analysis also seeks to identify demographic and economic features shared by 
 * Many communities with the highest rates of underwater mortgages in 2009 are not on the list of problem areas in 2019, but there are exceptions.  Prince George's County, in Maryland, for example, was among the biggest trouble spots in 2009 and remained so in 2019. 
 
 ## Other readings
-https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
+
 
 ## Load Packages, Define Functions, Change Settings 
 
@@ -439,7 +439,7 @@ unemployment <- read_xlsx("../data/input_data/bls/laucnty18.xlsx") %>%
 
 ### Create final data frames
 
-The following code block creates the four tables we use most extensively in this analysis, two for ZIP codes and two for counties. For each geography, there's a version which has been joined to the information from Zillow about home values and change in home values over time.  Unfortunately, that data was not available for all counties and ZIP codes, so joining it gives us a smaller subset of counties/ZIPs to work with.
+The following code block creates the four tables we use most extensively in this analysis, two for ZIP codes and two for counties. For each geography, there's a version which has been joined to the information from Zillow about home values and change in home values over time.  Unfortunately, that data was not available for all counties and ZIP codes, so joining it gives us a smaller subset of counties/ZIPs to work with when we examine housing market charecteristics.  In general, Zillow data is more available for larger counties.
 
 * underwater_county_year_no_zillow: includes 2446 counties. 
 * underwater_county_year_yes_zillow: includes 1447 counties.  
@@ -513,11 +513,13 @@ counties <- counties(cb = TRUE)
 
 The rest of this document describes findings in details. 
 
+https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
+
 ### Negative equity clusters in 2019 
 
 Though negative equity rates are nowhere near 2009 levels, the analysis identified 10 prominent clusters with higher negative equity rates relative to the rest of the country.  
 
-In the map below, click on the two-letter buttons at right to zoom to that cluster. 
+In the map below, click on the two-letter buttons at right to zoom to that cluster. Only ZIPs with negative equity above 5% are shown. 
 
 Click on each ZIP code shape to see detailed data for that ZIP code.
 
@@ -595,7 +597,7 @@ leaflet(high_negative_equity_zips_geo) %>%
 
 ```
 
-Below is a table with the same information that populates the map, for exploration. 
+Below is a table with the same information that populates the map, for exploration. Scroll to the right to see more columns. 
 
 To see the code that makes this table, click "Code" to expand. 
 
@@ -759,7 +761,7 @@ datatable(high_negative_equity_county_2009, class = 'cell-border stripe', filter
 )
 ```
 
-In order to see where the problem was most pronounced in 2009, this map shows the top 89 negative equity rate counties in 2009. That's the same number above 4 percent in 2019. But, of course, the rates are much higher for these 89 counties. 
+In order to see where the problem was most pronounced in 2009, this map shows the top 89 negative equity rate counties in 2009. That's the same number above 4 percent in 2019 (shown on the second map above). But, of course, the rates are much higher for these 89 counties in 2009. 
 
 Click on each county to see detailed data for that county.
 
@@ -846,10 +848,9 @@ datatable(on_both, class = 'cell-border stripe', filter = 'top', rownames = FALS
 )
 ```
 
-
 ### 2019 is not nearly as bad as 2009
 
-On average, underwater rates are nowhere near as high as they used to be in the years immediately following the crash of the housing market. 
+On average, underwater rates are nowhere near as high as they were in the years immediately following the crash of the housing market. 
 
 In 2009, the average U.S. county had 5.5 percent of homes in negative equity, compared to 1.62 last year. A large number of very high negative equities skewed the mean in 2009.  The median was much less pronounced.
 
@@ -876,14 +877,21 @@ datatable(x, class = 'cell-border stripe', filter = 'top', rownames = FALSE, cap
 ```
 
 
-## Explaining the differences
-In general, amongst the highest negative equity zips, there's a general trend.  The higher the rate of af american and hispanics, the higher the rate.
+## Disproportionate racial impact
+
+There's a clear trend: places with higher rates of negative equity tend to have a higher proportion of minorities, specificially African-Americans and Hispanics.  Places that are whiter tend to have lower rates of negative equity. 
+
+The table divides each U.S. ZIP code into one of two buckets by negative equity rate: greater than or equal to 4 percent and less than 4 percent.  It then calculates the average percentage for each racial group in each bucket. 
+
+The percentage of African-Americans and Hispanics in the high negative equity bucket was nearly double the percentages in the low negative equity bucket. 
+
+To see the code that makes this table, click "Code" to expand. 
 
 ```{r}
 
 # Average table
 underwater_zips_2019_no_zillow %>%
-  mutate(negative_equity_group = case_when(percent_negative_equity > 4 ~ "greater than 4",
+  mutate(negative_equity_group = case_when(percent_negative_equity >= 4 ~ "greater than or equal to 4",
                                       TRUE ~ "less than 4")
          ) %>%
   filter(!is.na(pct_black_2017), !is.na(median_household_income_2017)) %>%
@@ -899,13 +907,17 @@ underwater_zips_2019_no_zillow %>%
   options = list(scrollX=TRUE,scrollY=TRUE, scrollCollapse=TRUE, pageLength = 11)
 )
 ```
-We also see a fairly stark difference in the negative equity rate in majority minority ZIP codes, compared with majority white ZIP codes. 
+
+We can also group each ZIP code into one of two buckets: greater than 50 percent white and less than 50 percent white.  The negative equity rate in the "not majority white" ZIPs is about 50 percent higher than in majority white ZIPs. 
+
+To see the code that makes this table, click "Code" to expand. 
+
 ```{r}
 
 # Average table
 underwater_zips_2019_no_zillow %>%
   mutate(population_makeup= case_when(pct_white_2017 > 50 ~ "majority white",
-                                      TRUE ~ "majority minority")
+                                      TRUE ~ " not majority white")
          ) %>%
   filter(!is.na(percent_negative_equity)) %>%
   group_by(population_makeup) %>%
@@ -914,7 +926,22 @@ underwater_zips_2019_no_zillow %>%
 
 ```
 
-And amongst higher negative equity ZIP codes (>= 4%), we see significant trends towards higher rates of negative equity as ZIP codes' in more African-American and Hispanic areas.   
+We can also examine the subset of the highest negative equity ZIPs, (>= 4%).  
+
+By doing that, we see that there is a significant relationship between a ZIP code's negative equity rate and the racial makeup of its population. That's not to say that racial makeup causes these differences, just that there's an observed relationship that indicates the two variables move somewhat in tandem. It's part of the evidence for our claim that the negative equity problem is hitting minority areas harder. 
+
+The relationship is weak-moderate, but statistically significant (all less than p <.05).  An r (correlation coeffecient) of 1 indicates a perfect positve correlation, 0 indicates no correlation, and -1 indicates a perfect negative correlation, we see the following:
+
+* As the percentage of whites increases, negative equity rates decline (r=-.39)
+* As the percentage of blacks increases, negative equity rates rise (r=.32)
+* As the percentage of Hispanics increases, negative equity rates rise (r=.3)
+
+For a good discussion, read these two links:
+
+* [R vs r2](https://mathbits.com/MathBits/TISection/Statistics2/correlation.htm)
+* [Assessing R squared](https://blog.minitab.com/blog/adventures-in-statistics-2/regression-analysis-how-do-i-interpret-r-squared-and-assess-the-goodness-of-fit)
+
+To see the code that makes this table, click "Code" to expand. 
 
 ```{r}
 # Correlation for higher rate counties
@@ -936,42 +963,64 @@ underwater_zips_2019_no_zillow_correlation_matrix <- flattenCorrMatrix(underwate
 # Print correlation matrix.  Let's us see both r (correlation coefficient) and p value for each predictor on an individual level
 underwater_zips_2019_no_zillow_correlation_matrix %>%
   filter(str_detect(column,"white|black|hispanic")) %>%
+  mutate(var_1 = row, var_2 = column, cor_coef_r = cor, det_coef_r2 = cor*cor, sig_p = p ) %>%
+  dplyr::select(var_1:sig_p) %>%
   datatable()
 
 ```
-There is correlation coefficient of .33 between an areas' percentage of African-Americans' and its negative equity rate, a moderate positive relationship. This is not causal, per se, just that a third of the variance in negative equity rates is explained by an areas' concentration of African Americans. Areas with higher rates of African-Americans tend to have higher negative equity rates.  
-```{r}
 
+The graph below plots each ZIP code as a dot, with locations determined by the ZIP code's black percentage (y axis) and negative equity rate (y axis). 
 
-ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_black_2017", add="loess", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
-  stat_cor(method = "pearson", label.x =15, label.y = 15)
-```
-There is correlation coefficient of .30 between an areas' percentage of Hispanics and its negative equity rate, a moderate positive relationship. This is not causal, per se, just that a third of the variance in negative equity rates is explained by an areas' concentration of African Americans.  Areas with higher rates of Hispanics tend to have higher negative equity rates. 
-```{r}
+The blue "line of best fit"/regression line/trend line plots helps us understand the relationship between the two variables. It says that, on the whole, for every 2.9 percent increase in the black population, we see a 1 percent increase in an area's negative equity rate.  
 
-
-ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_hispanic_2017", add="loess", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
-  stat_cor(method = "pearson", label.x = 16, label.y = 15)
-
-```
-
-As one might expect, the opposite is true for whiter areas. There is correlation coefficient of -.4 between an areas' percentage of whites and its negative equity rate, a moderate negative relationship. This is not causal, per se, just that a two-fifths of the variance in negative equity rates is explained by an areas' concentration of whites.  Areas with higher rates of whites tend to have higher lower negative equity rates. 
 
 ```{r}
 
 
-ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_white_2017", add="loess", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
-  stat_cor(method = "pearson", label.x = 16, label.y = 15)
+ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_black_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
+  stat_cor(method = "pearson", label.x =15, label.y = 15) + 
+  stat_regline_equation(label.x = 15, label.y = 32)
+```
+There's a similar trend for Hispanics.  For every 2.6 percent increase in the Hispanic population, we see a 1 percent increase in an area's negative equity rate.  
+
+```{r}
+
+
+
+ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_hispanic_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
+  stat_cor(method = "pearson", label.x =15, label.y = 15) + 
+  stat_regline_equation(label.x = 15, label.y = 32)
 
 ```
 
-The analysis identified target ZIP codes where reporting could be focused that are emblematic of the larger trend towards higher rates of negative equity in minority neighborhoods.  
+As one might expect, the opposite is true for whiter areas. For every 4 percent decrease in the white population, there's a 1 percent decrease in the negative equity rate. 
+ 
+
+```{r}
+
+
+ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_white_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
+  stat_cor(method = "pearson", label.x =15, label.y = 15) + 
+  stat_regline_equation(label.x = 15, label.y = 32)
+
+
+```
+
+The disproportionate impact of negative equity in minority neighborhoods has been flagged by other researchers in the past.  
+
+These two papers, in particular, are worth reading:
+
+* [Negative Equity in the Sixth Federal Reserve District](https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf): work done at the Federal Reserve Bank of Atlanta in 2016 that build a fairly accurate model to explain negative equity rates in the South.  See page 14 for race and other factors that built the model. 
+* [Homes in Black Neighborhoods Twice as Likely to be Underwater as Homes in White Neighborhoods](https://www.zillow.com/research/negative-equity-race-q3-2016-14063/): work done by Zillow in 2017.
+
+
+Our analysis identified target ZIP codes where reporting could be focused that are emblematic of the larger trend towards higher rates of negative equity in minority neighborhoods.  
 
 For majority black neighborhoods, this includes:  
 * 11208 in Brooklyn, a majority black neighborhood with 26% negative equity; 
 * 07062 (in Plainfield), 07108 (Newark), 07114 (Newark). These north New Jersey neighborhoods all have greater than 16% negative equity. 
 * A cluster of nine ZIP codes in Chicago with greater than 15% negative equity;
-* A ton more examples, if you look at the table below, which are all majority black neighborhoods, including many Maryland ZIPs
+* A ton more examples, if you look at the table below, which are all majority black neighborhoods, including many Maryland ZIPs.
 
 ```{r}
 
@@ -996,7 +1045,7 @@ high_negative_equity_county_2019 %>%
   arrange(desc(pct_black_2017)) %>%
 datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
     style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%'
+    '2019: Counties with negative equity >= 4%, sorted by pct_black_2017'
   ),
   options = list(scrollX=TRUE, scrollCollapse=TRUE)
 )
@@ -1030,7 +1079,7 @@ high_negative_equity_county_2019 %>%
   arrange(desc(pct_hispanic_2017)) %>%
 datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
     style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%'
+    '2019: Counties with negative equity >= 4%, sorted by pct_hispanic_2017'
   ),
   options = list(scrollX=TRUE, scrollCollapse=TRUE)
 )
