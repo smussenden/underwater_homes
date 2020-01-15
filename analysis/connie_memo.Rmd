@@ -1,7 +1,7 @@
 ---
 title: "Negative Equity Trends in the U.S. Housing Market"
 author: "Sean Mussenden | Howard Center for Investigative Journalism"
-date: "1/6/2020"
+date: "1/15/2020"
 output: 
   html_document:
     code_folding: hide
@@ -29,25 +29,24 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This memo describes initial data analysis done to identify clusters in the United States where a significant portion of homes are "underwater", a decade after the sharp decline in home prices during the global financial crisis. 
 
-An underwater home is one where the estimated value of a home is lower than the estimated principal balance of the mortgage (negative loan to value or LTV). 
+An underwater home is one where the estimated value of a home is lower than the estimated principal balance of the mortgage (negative loan-to-value or LTV). 
 
 The analysis also seeks to identify demographic and economic features shared by communities with high rates of negative LTV homes, and to understand how negative LTV rates have changed since 2009, when some communities had a majority of homes with negative LTVs. 
 
 ## Major findings
 
-* There are more than 10 clusters in the United States with high levels of negative equity, including parts of suburban and rural Maryland, southern and northern New Jersey, Connecticut, California and more.  See the maps.  
+* There were more than 10 clusters in the United States with high levels of negative equity in 2019, including parts of suburban and rural Maryland, southern and northern New Jersey, Connecticut, California and more.  See the maps for details.  
 * Though there are U.S. communities with troubling levels of negative equity, on the whole rates today are nowhere near where they were in 2009. 
 * In general, communities with larger minority populations (specifically African-Americans and Hispanics) have higher rates of negative equity, though there are exceptions.  
 * Many communities with the highest rates of underwater mortgages in 2009 are not on the list of problem areas in 2019, but there are exceptions.  Prince George's County, in Maryland, for example, was among the biggest trouble spots in 2009 and remained so in 2019. 
 
-## Other readings
+## Document setup code
 
+Code to set up workspace for data work.  
 
-## Load Packages, Define Functions, Change Settings 
+*Click "Code" to expand the code block if you'd like to see what's happening behind the scenes.*
 
-Code to set up workspace for data work.  Click "Code" to expand if you need to see it. 
-
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, message=FALSE}
 
 # Turn off scientific notation
 options(scipen=9999)
@@ -113,7 +112,6 @@ source('keys.r')
 
 ```
 
-
 ## Data loading and cleaning
 
 For this analysis, we used several data sets that describe:
@@ -132,9 +130,9 @@ We have several data sets describing negative equity in U.S. communities, via Co
 
 Note: We are waiting for a third data set from CoreLogic, which they sent to us, but had errors I identified (only had data for four states), of negative equity share of all homes by ZIP code by month-year from 2009-present. We've also asked them for LTV bucket breakouts, but they've gone radio silent.
 
-To see the code that loads and cleans the data, click "Code" to expand. 
+*To see the code that loads and cleans the data, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Load negative equity share by county by month-year
 underwater_county_month_year <- read_xlsx("../data/input_data/core_logic/negative_equity_share_county.xlsx")
@@ -208,10 +206,11 @@ negative_equity_summary_zip <- negative_equity_summary %>%
 
 ### Demographic and economic data
 
-We pulled race, income and poverty data points for U.S. ZIP Codes and counties from the U.S. Census American Community Survey product for 2017, the most recent available year via the Tidycensus package. To see the code that loads and cleans the data, click "Code" to expand. 
+We pulled race, income and poverty data points for U.S. ZIP Codes and counties from the U.S. Census American Community Survey product for 2017, the most recent available year via the Tidycensus package. 
 
+*To see the code that loads and cleans the data, click "Code" to expand.*
 
-``` {r include=FALSE}
+``` {r warning=FALSE, message=FALSE}
 
 # Load variables for exploration
 # acs_variable <- load_variables(2017, "acs5", cache = TRUE)
@@ -315,9 +314,11 @@ rm(list=ls(pattern="acs_zcta|fips_codes"))
 
 ### Housing market charecteristics data
 
-From the real estate data firm Zillow, we pulled information on current home values, how those values have changed over select time periods, and how they are forecast to change in the coming year.  Data is from October 2019 for U.S. ZIP codes and counties. To see the code that loads and cleans the data, click "Code" to expand. 
+From the real estate data firm Zillow, we pulled information on current home values, how those values have changed over select time periods, and how they are forecast to change in the coming year.  Data is from October 2019 for U.S. ZIP codes and counties. 
 
-```{r}
+*To see the code that loads and cleans the data, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 # https://www.zillow.com/research/data/
 
@@ -422,9 +423,11 @@ rm(list=c("county_ZHVI_summary_current_month","Zip_ZHVI_summary_current_month", 
 
 ### Urban-rural characteristic and unemployment data
 
-We obtained from the USDA a classification system that defines each county on a scale from 1 (most urban) to 9 (most rural).  Unemployment data is via Bureau of Labor Statistics, 2018 average by county. To see the code that loads and cleans the data, click "Code" to expand. 
+We obtained from the USDA a classification system that defines each county on a scale from 1 (most urban) to 9 (most rural).  Unemployment data is via Bureau of Labor Statistics, 2018 average by county. 
 
-```{r}
+*To see the code that loads and cleans the data, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 # County rural urban code designation from USDA
 # Spectrum from 1 (most urban) to 9 (most rural)
 rural_urban <- read_xls("../data/input_data/rural_urban_codes/ruralurbancodes2013.xls") %>%
@@ -451,9 +454,9 @@ We also have the Q1 2017 data from Zillow with detailed loan-to-value buckets.
 * negative_equity_summary_county: includes 2340 counties. 
 * negative_equity_summary_zip: includes 21697 ZIP codes.
 
-To see the code that loads and cleans the data, click "Code" to expand. 
+*To see the code that loads and cleans the data, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 ## Make county data frames (2009-2019 time series)
 
@@ -492,9 +495,11 @@ rm(list=setdiff(ls(), c("underwater_zips_2019_no_zillow", "underwater_zips_2019_
 
 ### Load shapefiles
 
-To make the maps later, we'll need U.S. county and ZIP code shapes.  To see the code that loads these files, click "Code" to expand. 
+To make the maps later, we'll need U.S. county and ZIP code shapes.  
 
-```{r}
+*To see the code that loads and cleans the data, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 #ZCTAs can take several minutes to download.  To cache the data and avoid re-downloading in future R sessions, set `options(tigris_use_cache = TRUE)`
 options(tigris_use_cache = TRUE)
 
@@ -511,9 +516,7 @@ counties <- counties(cb = TRUE)
 
 ## Detailed Findings 
 
-The rest of this document describes findings in details. 
-
-https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
+The rest of this document describes findings of our analysis in detail. 
 
 ### Negative equity clusters in 2019 
 
@@ -525,21 +528,21 @@ Click on each ZIP code shape to see detailed data for that ZIP code.
 
 Here are the clusters that jumped out to me.  You may see others.  
 
-* MD1 | Maryland+DC | Cluster of ZIP Codes in Prince George's County and Anacostia in D.C. and down through Waldorm, in Charles County.
+* MD1 | Maryland+DC | Cluster of ZIP codes in Prince George's County and Anacostia in D.C. and down through Waldorf, in Charles County.
 * MD2 | Maryland Eastern Shore | Huge chunks of the lower Eastern Shore, through Salisbury and Ocean City.
 * NJ1 | South New Jersey | Large swaths of southern New Jersey, including Atlantic City, Philly suburbs.
 * NJ2 | North Jersey+NYC | New York City suburbs, including Newark, Elizabeth, Paterson, parts of Queens
 * CT | Connecticut | Several areas, including Hartford and Waterbury, Bridgeport and New Haven, up to Rhode Island border.
 * IA | Iowa | a bunch of communities in Iowa with no real clusters. Can't make heads or tails of this.
-* FL | Florida | Worst issues in Miami, Hialeah and Homestead, scatterd parts of the state.
-* IL | Chicago | Huge issues surrounding Chicago, especially on South Side
+* FL | Florida | Worst issues in Miami, Hialeah and Homestead, scattered parts of the state.
+* IL | Chicago | Huge issues surrounding Chicago, especially on South Side.
 * CA | California | Issues in Fresno, south of Monterey, scattered throughout. 
 * NV | Las Vegas  
-* No buttons, but interesting | Baton Rouge, New Orleans, Atlanta, North Dakota
+* No buttons, but interesting | Baton Rouge, New Orleans, Atlanta, North Dakota. Use manual zoom with +/-
 
-To see the code that makes this map, click "Code" to expand. 
+*To see the code that makes this map, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Filter for only high negative equity zip codes
 high_negative_equity_zips <- underwater_zips_2019_no_zillow %>%
@@ -599,17 +602,19 @@ leaflet(high_negative_equity_zips_geo) %>%
 
 Below is a table with the same information that populates the map, for exploration. Scroll to the right to see more columns. 
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 datatable(high_negative_equity_zips, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
+    style = 'caption-side: bottom; text-align: left;',
     '2019: ZIP codes with negative equity >= 5%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
+
+
 ```
 
 Instead of ZIP codes, this map shows county-level averages. There were 89 counties with a negative equity rate above 4 percent in 2019, as shown on this map. 
@@ -618,9 +623,9 @@ In the map below, click on the two-letter buttons at right to zoom to that clust
 
 Click on each county to see detailed data for that county.
 
-To see the code that makes this map, click "Code" to expand. 
+*To see the code that makes this map, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Filter for 2019
 high_negative_equity_county_2019 <- underwater_county_year_no_zillow %>%
@@ -682,26 +687,32 @@ leaflet(high_negative_equity_county_2019_geo) %>%
 
 Below is a table with the same information that populates the map, for exploration. 
 
-To see the code that makes this table, click "Code" to expand. 
-```{r}
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 datatable(high_negative_equity_county_2019, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
+    style = 'caption-side: bottom; text-align: left;',
     '2019: Counties with negative equity >= 4%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
+
+
+
+
 ```
 
-### Negative equity clusters in 2019 
+### Negative equity clusters in 2009 
 
 For comparison, this is every county in the U.S. in 2009 with a negative equity rate above 4 percent, 654 counties in total.  The negative equity problem was much more widespread following the financial crisis. 
 
 Click on each county to see detailed data for that county.
 
-To see the code that makes this map, click "Code" to expand. 
+*To see the code that makes this map, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Filter for 2009
 high_negative_equity_county_2009 <- underwater_county_year_no_zillow %>%
@@ -750,24 +761,29 @@ leaflet(high_negative_equity_county_2009_geo) %>%
 ```
 Below is a table with the same information that populates the map, for exploration. 
 
-To see the code that makes this table, click "Code" to expand. 
-```{r}
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 datatable(high_negative_equity_county_2009, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
+    style = 'caption-side: bottom; text-align: left;',
     '2009: Counties with negative equity >= 4%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
+
+
+
 ```
 
 In order to see where the problem was most pronounced in 2009, this map shows the top 89 negative equity rate counties in 2009. That's the same number above 4 percent in 2019 (shown on the second map above). But, of course, the rates are much higher for these 89 counties in 2009. 
 
 Click on each county to see detailed data for that county.
 
-To see the code that makes this map, click "Code" to expand. 
+*To see the code that makes this map, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 # Filter for 2009
 top_negative_equity_county_2009 <- underwater_county_year_no_zillow %>%
   #dplyr::select(state_code, fips_code, state_name, county_name, y2009) %>%
@@ -813,39 +829,46 @@ leaflet(top_negative_equity_county_2009_geo) %>%
 )
 
 ```
-```{r}
-
-datatable(top_negative_equity_county_2009, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2009: 89 Counties with highest negative equity rates'
-  ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
-)
-```
 
 Below is a table with the same information that populates the map, for exploration. 
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(top_negative_equity_county_2009, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2009: 89 Counties with highest negative equity rates'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
+
+
+```
+
 
 ### Problem counties in 2009 and 2019
 
 There's not a lot of crossover between problematic counties in 2009 and 2019. Only 13 counties that were on the list of the highest negative equity counties in 2009 were also there in 2019, including two Maryland counties.  
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 on_both <- top_negative_equity_county_2009 %>%
   inner_join(high_negative_equity_county_2019, by=c("fips_code", "county_name", "state_name", "pct_negative_equity_y2009", "pct_negative_equity_y2019")) %>%
   dplyr::select(fips_code, county_name, state_name, pct_negative_equity_y2009, pct_negative_equity_y2019)
 
-
 datatable(on_both, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
+    style = 'caption-side: bottom; text-align: left;',
     'County with highest rates in 2019 and 2009'
   ),
-  options = list(scrollX=TRUE,scrollY=TRUE, scrollCollapse=TRUE, pageLength = 13)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
+
+
 ```
 
 ### 2019 is not nearly as bad as 2009
@@ -856,9 +879,9 @@ In 2009, the average U.S. county had 5.5 percent of homes in negative equity, co
 
 In 2009, the median U.S. county had 2.2 percent of homes in negative equity, compared to 1.3 percent in 2019.
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 x <- underwater_county_year_no_zillow %>%
   pivot_longer(cols=c("pct_negative_equity_y2009", "pct_negative_equity_y2010", "pct_negative_equity_y2011", "pct_negative_equity_y2012","pct_negative_equity_y2013","pct_negative_equity_y2014","pct_negative_equity_y2015","pct_negative_equity_y2016","pct_negative_equity_y2017","pct_negative_equity_y2018","pct_negative_equity_y2019"), names_to = "year", values_to = "percent_negative_equity") %>%
@@ -877,7 +900,7 @@ datatable(x, class = 'cell-border stripe', filter = 'top', rownames = FALSE, cap
 ```
 
 
-## Disproportionate racial impact
+### Disproportionate racial impact
 
 There's a clear trend: places with higher rates of negative equity tend to have a higher proportion of minorities, specificially African-Americans and Hispanics.  Places that are whiter tend to have lower rates of negative equity. 
 
@@ -885,9 +908,9 @@ The table divides each U.S. ZIP code into one of two buckets by negative equity 
 
 The percentage of African-Americans and Hispanics in the high negative equity bucket was nearly double the percentages in the low negative equity bucket. 
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Average table
 underwater_zips_2019_no_zillow %>%
@@ -900,19 +923,24 @@ underwater_zips_2019_no_zillow %>%
             pct_white_2017 = round(mean(pct_white_2017),2),
             pct_hispanic_2017 = round(mean(pct_hispanic_2017),2),
             median_household_income_2017 = round(mean(median_household_income_2017),2)) %>%
-  datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    'Averages'
+    datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'Racial groups by negative equity bucket'
   ),
-  options = list(scrollX=TRUE,scrollY=TRUE, scrollCollapse=TRUE, pageLength = 11)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 1))
 )
+
+
+
+
 ```
 
 We can also group each ZIP code into one of two buckets: greater than 50 percent white and less than 50 percent white.  The negative equity rate in the "not majority white" ZIPs is about 50 percent higher than in majority white ZIPs. 
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 # Average table
 underwater_zips_2019_no_zillow %>%
@@ -921,16 +949,25 @@ underwater_zips_2019_no_zillow %>%
          ) %>%
   filter(!is.na(percent_negative_equity)) %>%
   group_by(population_makeup) %>%
-  summarise(percent_negative_equity = round(mean(percent_negative_equity),2)) 
+  summarise(percent_negative_equity = round(mean(percent_negative_equity),2)) %>%
+  datatable( class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'County with highest rates in 2019 and 2009'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
 
 
 ```
 
 We can also examine the subset of the highest negative equity ZIPs, (>= 4%).  
 
-By doing that, we see that there is a significant relationship between a ZIP code's negative equity rate and the racial makeup of its population. That's not to say that racial makeup causes these differences, just that there's an observed relationship that indicates the two variables move somewhat in tandem. It's part of the evidence for our claim that the negative equity problem is hitting minority areas harder. 
+By doing that, we see that there is a significant relationship between a ZIP code's negative equity rate and the racial makeup of its population. 
 
-The relationship is weak-moderate, but statistically significant (all less than p <.05).  An r (correlation coeffecient) of 1 indicates a perfect positve correlation, 0 indicates no correlation, and -1 indicates a perfect negative correlation, we see the following:
+That's not to say that racial makeup causes these differences, just that there's an observed relationship that indicates the two variables move somewhat in tandem. It's part of the evidence for our claim that the negative equity problem is hitting minority areas harder; in minority-heavy areas, negative equity rates tend to be higher.   
+
+The relationship is weak-to-moderate, but statistically significant (all less than p <.05).  An r (correlation coeffecient) of 1 indicates a perfect positve correlation, 0 indicates no correlation, and -1 indicates a perfect negative correlation, we see the following:
 
 * As the percentage of whites increases, negative equity rates decline (r=-.39)
 * As the percentage of blacks increases, negative equity rates rise (r=.32)
@@ -941,9 +978,9 @@ For a good discussion, read these two links:
 * [R vs r2](https://mathbits.com/MathBits/TISection/Statistics2/correlation.htm)
 * [Assessing R squared](https://blog.minitab.com/blog/adventures-in-statistics-2/regression-analysis-how-do-i-interpret-r-squared-and-assess-the-goodness-of-fit)
 
-To see the code that makes this table, click "Code" to expand. 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 # Correlation for higher rate counties
 underwater_zips_2019_no_zillow_trimmed <- underwater_zips_2019_no_zillow %>%
   dplyr::select(-zip_code,-state_name,-county_name) %>%
@@ -965,27 +1002,34 @@ underwater_zips_2019_no_zillow_correlation_matrix %>%
   filter(str_detect(column,"white|black|hispanic")) %>%
   mutate(var_1 = row, var_2 = column, cor_coef_r = cor, det_coef_r2 = cor*cor, sig_p = p ) %>%
   dplyr::select(var_1:sig_p) %>%
-  datatable()
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'County with highest rates in 2019 and 2009'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 2))
+)
 
 ```
 
-The graph below plots each ZIP code as a dot, with locations determined by the ZIP code's black percentage (y axis) and negative equity rate (y axis). 
+The graph below plots each ZIP code as a dot, with locations determined by the ZIP code's black population percentage (y axis) and negative equity rate (y axis). 
 
-The blue "line of best fit"/regression line/trend line plots helps us understand the relationship between the two variables. It says that, on the whole, for every 2.9 percent increase in the black population, we see a 1 percent increase in an area's negative equity rate.  
+The blue trend line helps us understand the relationship between the two variables. It says that, on the whole, for every 2.9 percent increase in the black population, we see a 1 percent increase in an area's negative equity rate.  
 
+*To see the code that makes this graph, click "Code" to expand.*
 
-```{r}
-
+```{r warning=FALSE, message=FALSE}
 
 ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_black_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
-  stat_cor(method = "pearson", label.x =15, label.y = 15) + 
-  stat_regline_equation(label.x = 15, label.y = 32)
+  stat_cor(method = "pearson", label.x =20, label.y = 15) + 
+  stat_regline_equation(label.x = 20, label.y = 32)
 ```
+
 There's a similar trend for Hispanics.  For every 2.6 percent increase in the Hispanic population, we see a 1 percent increase in an area's negative equity rate.  
 
-```{r}
+*To see the code that makes this graph, click "Code" to expand.*
 
-
+```{r warning=FALSE, message=FALSE}
 
 ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_hispanic_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
   stat_cor(method = "pearson", label.x =15, label.y = 15) + 
@@ -993,10 +1037,11 @@ ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y=
 
 ```
 
-As one might expect, the opposite is true for whiter areas. For every 4 percent decrease in the white population, there's a 1 percent decrease in the negative equity rate. 
- 
+As one might expect, the opposite is true for whiter areas. For every 4 percent increase in the white population, there's a 1 percent decrease in the negative equity rate. 
 
-```{r}
+*To see the code that makes this graph, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 
 ggscatter(underwater_zips_2019_no_zillow_trimmed, x="percent_negative_equity",y= "pct_white_2017", add="reg.line", add.params = list(color = "blue", fill = "lightgray"), conf.int=TRUE) +
@@ -1013,114 +1058,517 @@ These two papers, in particular, are worth reading:
 * [Negative Equity in the Sixth Federal Reserve District](https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf): work done at the Federal Reserve Bank of Atlanta in 2016 that build a fairly accurate model to explain negative equity rates in the South.  See page 14 for race and other factors that built the model. 
 * [Homes in Black Neighborhoods Twice as Likely to be Underwater as Homes in White Neighborhoods](https://www.zillow.com/research/negative-equity-race-q3-2016-14063/): work done by Zillow in 2017.
 
-
 Our analysis identified target ZIP codes where reporting could be focused that are emblematic of the larger trend towards higher rates of negative equity in minority neighborhoods.  
 
 For majority black neighborhoods, this includes:  
 * 11208 in Brooklyn, a majority black neighborhood with 26% negative equity; 
 * 07062 (in Plainfield), 07108 (Newark), 07114 (Newark). These north New Jersey neighborhoods all have greater than 16% negative equity. 
 * A cluster of nine ZIP codes in Chicago with greater than 15% negative equity;
-* A ton more examples, if you look at the table below, which are all majority black neighborhoods, including many Maryland ZIPs.
+* A ton more examples, if you look at the map and table below, which are all majority black neighborhoods.
 
-```{r}
+This map shows majority black ZIP codes with a negative equity rate above 5%.
 
-high_negative_equity_zips %>%
-  filter(pct_black_2017 > 50) %>%
-  datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: majority black ZIP codes with negative equity >= 4%'
-  ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+*To see the code that makes this map, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only majority black high negative equity zip codes
+maj_black_high_negative_equity_zips <- high_negative_equity_zips %>%
+  filter(pct_black_2017 > 50) 
+
+# Join zip code coordinates to negative equity by zipcode
+maj_black_high_negative_equity_zips_geo <- geo_join(zctas, maj_black_high_negative_equity_zips, 'GEOID10', 'zip_code', how = "inner")
+
+# Color Scheme
+binpal <- colorBin("plasma", maj_black_high_negative_equity_zips_geo$percent_negative_equity, 5, pretty = FALSE)
+
+# Draw map
+leaflet(maj_black_high_negative_equity_zips_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(percent_negative_equity), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(maj_black_high_negative_equity_zips_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = colorBin("plasma", maj_black_high_negative_equity_zips_geo $percent_negative_equity), 
+             values = maj_black_high_negative_equity_zips_geo$percent_negative_equity,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
 )
+
 ```
 
-At the county level, several areas with large African-American populations have high negative equity rates, including:
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(maj_black_high_negative_equity_zips, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: Majority black ZIP codes with negative equity >= 5%'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
+
+```
+
+At the county level, several areas with large African-American populations (>= 20%) have high negative (>4%) equity rates, including:
 * Five Maryland counties/city: Prince George's, Baltimore (city), Charles, Somerset and Dorchester
 * Seven counties/cities in Virginia.
-* More in the table below.
+* More in the map below.
 
-```{r}
-high_negative_equity_county_2019 %>%
-  dplyr::select(state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_black_2017, pct_hispanic_2017) %>%
+*To see the code that makes this map, click "Code" to expand.*
+
+
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only large black population high negative equity counties
+high_black_high_negative_equity_county_2019 <- high_negative_equity_county_2019 %>%
+  dplyr::select(fips_code, state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_black_2017, pct_hispanic_2017) %>%
   arrange(desc(pct_black_2017)) %>%
-datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%, sorted by pct_black_2017'
-  ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  filter(pct_black_2017 >= 20) 
+
+# Join zip code coordinates to negative equity by zipcode
+high_black_high_negative_equity_county_2019_geo <- geo_join(counties, high_black_high_negative_equity_county_2019, 'GEOID', 'fips_code', 
+how = "inner")  
+
+# Color Scheme
+binpal <- colorBin("plasma", high_black_high_negative_equity_county_2019$pct_negative_equity_y2019, 5, pretty = FALSE)
+
+# Draw map
+leaflet(high_black_high_negative_equity_county_2019_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(pct_negative_equity_y2019), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(high_black_high_negative_equity_county_2019_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = binpal, 
+             values = high_black_high_negative_equity_county_2019_geo$pct_negative_equity_y2019,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
 )
+
+
+
 ```
 
-For majority Hispanic neighborhoods, this includes:  
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(high_black_high_negative_equity_county_2019, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: High black pop counties with negative equity >= 4%'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
+```
+Our analysis identified target ZIP codes where reporting could be focused that are emblematic of the larger trend towards higher rates of negative equity in Hispanic neighborhoods, too.  
+
+This includes:  
 * A cluster of five ZIP codes in Chicago with greater than 14% negative equity;
 * Two neighborhoods in Connecticut (06608, 06114)
 * Two neighborhoods in Fresno, California (93606, 93702)
 * Many more examples in the table below, including several Maryland ZIPs.
 
-```{r}
+*To see the code that makes this map, click "Code" to expand.*
 
-high_negative_equity_zips %>%
-  filter(pct_hispanic_2017 > 50) %>%
-  datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: majority Hispanic ZIP codes with negative equity >= 4%'
-  ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only majority black high negative equity zip codes
+maj_hispanic_high_negative_equity_zips <- high_negative_equity_zips %>%
+  filter(pct_hispanic_2017 > 50) 
+
+# Join zip code coordinates to negative equity by zipcode
+maj_hispanic_high_negative_equity_zips_geo <- geo_join(zctas, maj_hispanic_high_negative_equity_zips, 'GEOID10', 'zip_code', how = "inner")
+
+# Color Scheme
+binpal <- colorBin("plasma", maj_hispanic_high_negative_equity_zips_geo$percent_negative_equity, 5, pretty = FALSE)
+
+# Draw map
+leaflet(maj_hispanic_high_negative_equity_zips_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(percent_negative_equity), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(maj_hispanic_high_negative_equity_zips_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = colorBin("plasma", maj_hispanic_high_negative_equity_zips_geo $percent_negative_equity), 
+             values = maj_hispanic_high_negative_equity_zips_geo$percent_negative_equity,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
 )
+
 ```
 
-At the county level, this includes places with large Hispanic populations, including:
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(maj_hispanic_high_negative_equity_zips, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: Majority Hispanic ZIP codes with negative equity >= 5%'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
+
+```
+
+
+At the county level, several areas with large Hispanic populations (>= 20%) have high negative (>4%) equity rates, including:
+
 * Miami-Dade in Florida
 * Several counties in California and New Jersey
 
-```{r}
-high_negative_equity_county_2019 %>%
-  dplyr::select(state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_black_2017, pct_hispanic_2017) %>%
+*To see the code that makes this map, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only large hispanic population high negative equity counties
+high_hispanic_high_negative_equity_county_2019 <- high_negative_equity_county_2019 %>%
+  dplyr::select(fips_code, state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_hispanic_2017, pct_hispanic_2017) %>%
   arrange(desc(pct_hispanic_2017)) %>%
-datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%, sorted by pct_hispanic_2017'
+  filter(pct_hispanic_2017 >= 20) 
+
+# Join zip code coordinates to negative equity by zipcode
+high_hispanic_high_negative_equity_county_2019_geo <- geo_join(counties, high_hispanic_high_negative_equity_county_2019, 'GEOID', 'fips_code', 
+how = "inner")  
+
+# Color Scheme
+binpal <- colorBin("plasma", high_hispanic_high_negative_equity_county_2019$pct_negative_equity_y2019, 5, pretty = FALSE)
+
+# Draw map
+leaflet(high_hispanic_high_negative_equity_county_2019_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(pct_negative_equity_y2019), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="hispanic", popup = popupTable(high_hispanic_high_negative_equity_county_2019_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = binpal, 
+             values = high_hispanic_high_negative_equity_county_2019_geo$pct_negative_equity_y2019,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
+)
+
+
+
+```
+
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(high_hispanic_high_negative_equity_county_2019, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: High hispanic pop counties with negative equity >= 4%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
 ```
 
-This is not to say that only majority-minority neighborhods are affected.  There are hundreds of examples of overwhelmingly white neighborhoods (greater than 90% white) with high rates, including parts of Connecticut, Arizona, Iowa, New Jersey, Maryland and others. See the table below.
+This is not to say that only majority-minority areas are affected.  
 
-```{r}
+There are hundreds of examples of overwhelmingly white neighborhoods (greater than 90% white) with high rates, including parts of Connecticut, Arizona, Iowa, New Jersey, Maryland and others. 
 
-high_negative_equity_zips %>%
-  filter(pct_white_2017 > 90) %>%
-  datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: majority white (90%+) ZIP codes with negative equity >= 4%'
+See the map below.
+
+*To see the code that makes this map, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only majority black high negative equity zip codes
+super_maj_white_high_negative_equity_zips <- high_negative_equity_zips %>%
+  filter(pct_white_2017 > 90) 
+
+# Join zip code coordinates to negative equity by zipcode
+super_maj_white_high_negative_equity_zips_geo <- geo_join(zctas, super_maj_white_high_negative_equity_zips, 'GEOID10', 'zip_code', how = "inner")
+
+# Color Scheme
+binpal <- colorBin("plasma", super_maj_white_high_negative_equity_zips_geo$percent_negative_equity, 5, pretty = FALSE)
+
+# Draw map
+leaflet(super_maj_white_high_negative_equity_zips_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(percent_negative_equity), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(super_maj_white_high_negative_equity_zips_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = colorBin("plasma", super_maj_white_high_negative_equity_zips_geo $percent_negative_equity), 
+             values = super_maj_white_high_negative_equity_zips_geo$percent_negative_equity,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
+)
+
+```
+
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(super_maj_white_high_negative_equity_zips, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: Supermajority white ZIP codes with negative equity >= 5%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
+)
+
+```
+
+At the county level, places with supermajority white populations (>=66%) that have high negative equity rates (>=4%) include:
+* Several Iowa counties Illinois counties.
+* Parts of Maryland, New Jersey, Connecticut and Massachusetts.
+* Several others
+
+*To see the code that makes this map, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+# Filter for only large black population high negative equity counties
+veryhigh_white_high_negative_equity_county_2019 <- high_negative_equity_county_2019 %>%
+  dplyr::select(fips_code, state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_black_2017, pct_hispanic_2017) %>%
+  arrange(desc(pct_black_2017)) %>%
+  filter(pct_white_2017 >= 75) 
+
+# Join zip code coordinates to negative equity by zipcode
+veryhigh_white_high_negative_equity_county_2019_geo <- geo_join(counties, veryhigh_white_high_negative_equity_county_2019, 'GEOID', 'fips_code', 
+how = "inner")  
+
+# Color Scheme
+binpal <- colorBin("plasma", veryhigh_white_high_negative_equity_county_2019$pct_negative_equity_y2019, 5, pretty = FALSE)
+
+# Draw map
+leaflet(veryhigh_white_high_negative_equity_county_2019_geo) %>%
+   addProviderTiles(providers$CartoDB.Positron) %>%
+   #addProviderTiles(providers$Wikimedia) %>%
+   addPolygons(fillColor = ~binpal(pct_negative_equity_y2019), weight = 1, smoothFactor = 0.5, opacity = 0.1, fillOpacity = 0.5, color="black", popup = popupTable(veryhigh_white_high_negative_equity_county_2019_geo)) %>%
+   setView(-95, 39.335359608681216, 4) %>%
+   addHomeButton(extent(-98.39355468750001, -89.60449218750001, 39.85072092501597, 43.8899753738369), "IA") %>%
+   addHomeButton(extent(-115.44021606445314, -114.89089965820314, 36.04521273039952, 36.318998009207924), "NV") %>%
+   addHomeButton(extent(-127.24365234375001, -109.66552734375001, 31.98944183792288, 40.713955826286046), "CA") %>%
+   addHomeButton(extent(-88.33145141601564, -87.23281860351564, 41.466399253078876, 41.97276436226528), "IL") %>%
+   addHomeButton(extent(-80.82092285156251, -79.72229003906251, 25.517657429994035, 26.12831612064242), "FL") %>%
+   addHomeButton(extent(-73.95446777343751, -71.75720214843751, 41.03793062246529, 42.05337156043361), "CT") %>%
+   addHomeButton(extent(-74.46807861328126, -73.91876220703126, 40.57484790030712, 40.83199550584334), "NJ2") %>%
+   addHomeButton(extent(-75.86883544921876, -73.67156982421876, 39.16414104768742, 40.20824570152502), "NJ1") %>%
+   addHomeButton(extent(-76.95098876953126, -74.75372314453126, 38.10214399750345, 39.16201148082406), "MD2") %>%
+   addHomeButton(extent(-77.1947479248047, -76.6454315185547, 38.791021386961596, 39.0549177529185), "MD1") %>%
+   addHomeButton(extent(-131.74804687500003, -61.43554687500001, 18.812717856407776, 52.908902047770255 ), "U.S.") %>%
+   
+   addLegend("bottomleft", 
+             pal = binpal, 
+             values = veryhigh_white_high_negative_equity_county_2019_geo$pct_negative_equity_y2019,
+    title = "% Homes Negative Equity 2019",
+    labFormat = labelFormat(prefix = ""),
+    opacity = 1
+  ) %>%
+  addEasyButton(easyButton(
+    states = list(
+      easyButtonState(
+        stateName="unfrozen-markers",
+        icon="ion-toggle",
+        title="Get Bounding box",
+        onClick = JS("
+                     function(btn, map) {
+                        alert(
+                         map.getBounds().getWest() + ', ' + map.getBounds().getEast() + ', ' + map.getBounds().getSouth() + ', ' + map.getBounds().getNorth() 
+                        );
+                        
+                     }")
+      )
+    )
+  )
+)
+
+
+
+```
+
+This table shows the same information as the map above, for exploration.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
+
+datatable(veryhigh_white_high_negative_equity_county_2019, class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: Very white counties with negative equity >= 4%'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 3))
 )
 ```
 
-At the county level, places with tiny minority populations that have high negative equity rates include:
-* Seven Iowa counties and five Illinois counties.
-* Others on the table below. 
+### Property market charecteristics
 
-```{r}
-high_negative_equity_county_2019 %>%
-  dplyr::select(state_name, county_name, pct_negative_equity_y2019, pct_white_2017, pct_black_2017, pct_hispanic_2017) %>%
-  arrange(desc(pct_white_2017)) %>%
-datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%'
-  ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
-)
-```
+Counties with higher levels of negative equity have higher median home values, as measured by the Zillow Home Value Index (zhvi).  
 
+But property values in these areas are also growing more slowly, as measured by changes in the zillow home value index from the previous month, quarter and year. They are also forecast to grow slower in the next year.  This is not to say that negative equity rates caused these trends, just that there are observable differences between the two.
 
-## Property market charecteristics
+*To see the code that makes this table, click "Code" to expand.*
 
-Counties with higher levels of negative equity have higher median home values, as measured by the Zillow Home Value Index (zhvi).  But property values in these areas are also growing more slowly, as measured by changes in the zillow home value index from the previous month, quarter and year. They are also forecast to grow slower in the next year.  This is not to say that negative equity rates caused these trends, just that there are observable differences between the two.
-
-```{r}
+```{r warning=FALSE, message=FALSE}
 underwater_county_year_yes_zillow %>%
    mutate(negative_equity = case_when(pct_negative_equity_y2019 >= 4 ~ "neg_equity >= 4%",
                                      TRUE ~ "neg_equity < 4%"
@@ -1134,49 +1582,57 @@ underwater_county_year_yes_zillow %>%
             zhvi_ten_year_pct_change = round(mean(zhvi_ten_year_pct_change),2),
             zhvi_forecast_year_pct_change = round(mean(zhvi_forecast_year_pct_change),2),
             ) %>%
-datatable(class = 'cell-border stripe', filter = 'top', rownames = FALSE, caption = htmltools::tags$caption(
-    style = 'caption-side: top; text-align: left;',
-    '2019: Counties with negative equity >= 4%'
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    '2019: Very white counties with negative equity >= 4%'
   ),
-  options = list(scrollX=TRUE, scrollCollapse=TRUE)
-)
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 1)))
+
 ```
 
-# Prior year negative equity relationship
+### Prior year negative equity relationship
 
 It's fairly easy to predict a county's negative equity rate in 2019 based on its negative equity rate in 2018.  If it was high in 2018, it was -- with few exceptions -- high in 2019.  Things don't change that much from year to year.  
 
-As the table below shows the correlation coefficient between negative equity rates in 2019 and 2018 was .98, which is about as strong as it gets. 
+As the table below shows, the correlation coefficient (r) between negative equity rates in 2019 and 2018 was .98, which is about as strong as it gets. 
 
-But this trend diminishes over time.  The relationship between negative equity rates in 2019 and the rates a decade earlier, in 2009, was only moderate (.41). Just because a county had a high negative equity rate in 2009, it's not a guarantee that it had a high negative equity rate in 2019. 
+But this trend diminishes over time.  The relationship between negative equity rates in 2019 and the rates a decade earlier, in 2009, was only weak-moderate (.41). 
 
-```{r}
+Put another way, just because a county had a high negative equity rate in 2009, it's not a guarantee that it had a high negative equity rate in 2019. 
+
+*To see the code that makes this table, click "Code" to expand.*
+
+
+```{r warning=FALSE, message=FALSE}
 underwater_county_year_yes_zillow %>%
   dplyr::select(-matches("code|state|name|county|date|region|Metro|County|City|Month|Quarter|Last|Time|Description")) %>%
   correlate(method = c("pearson")) %>%
   dplyr::select(-RUCC_2013, -pct_negative_equity_y2009:-pct_negative_equity_y2018, -pct_white_2017:-zhvi_forecast_year_pct_change) %>%
   filter(!str_detect(rowname,"RUCC|_2017|_2018|2019|zhvi")) %>%
   mutate(corr_with_pct_negative_equity_y2019 = round(pct_negative_equity_y2019, 2)) %>%
+  dplyr::select(-pct_negative_equity_y2019) %>%
   arrange(desc(rowname)) %>%
-  datatable(
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)
-  )
-  )
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'correlations with pct_neg_equity_2019'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 1)))
+
 ```
 
-There are places that were at the epicenter of the problem in 2009 and are still there a decade later.  This table normalizes the specific negative equity rates for each county by ranking them on a scale from 0 (lowest rates) to 100 (highest rates) , allowing us to more easily compare across years. 
+But, there are places that were at the epicenter of the problem in 2009 and were still there a decade later, in 2019.  
 
-This includes:
+This table normalizes the specific negative equity rates for each county in 2009 and 2019 by ranking them on a scale from 0 (lowest rates) to 100 (highest rates), allowing us to more easily compare across years. 
+
+Places that were bad in 2009 and still bad in 2019 include:
 * Charles County and Prince George's County, Maryland, which were in the top 99 percent in both 2009 and 2019.
 * Osceola County and Miami-Dade County, Florida, which were both in the top 97 percent in both years. 
 
+*To see the code that makes this table, click "Code" to expand.*
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 underwater_county_year_yes_zillow %>%
   filter(pct_negative_equity_y2019 >= 1) %>%
@@ -1188,23 +1644,25 @@ underwater_county_year_yes_zillow %>%
   mutate(mean_2009_2019_negative_equity_rank = (pct_negative_equity_y2009_rank+pct_negative_equity_y2019_rank)/2) %>%
   dplyr::select(state_name, county_name, mean_2009_2019_negative_equity_rank, everything()) %>%
   arrange(desc(mean_2009_2019_negative_equity_rank)) %>%
-  datatable(
-    rownames = FALSE,
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)
-  )
-  )
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'Consistently bad places, 2009-2019'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 2)))
 
 
 ```
 
-There are also places that were among the worst in 2009 that now have some of the country's lowest rates.  This includes several counties in California (perhaps because home prices have appreciated so fast)?  Take Alameda County, California.  It's negative equity rate was in the 90th percentile in 2009. In 2019, it was among the lowest in the U.S. (1st percentile).
+There are also places that were among the worst in 2009 that now have some of the country's lowest rates.  
 
-```{r}
+This includes several counties in California (perhaps because home prices have appreciated so fast)?  Take Alameda County, California.  
+
+It's negative equity rate was in the 90th percentile in 2009. In 2019, it was among the lowest in the U.S. (1st percentile).
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 underwater_county_year_yes_zillow %>%
   filter(pct_negative_equity_y2019 >= 1) %>%
@@ -1217,23 +1675,26 @@ underwater_county_year_yes_zillow %>%
   dplyr::select(state_name, county_name, negative_equity_rank_change_2009_2019, everything()) %>%
   arrange(desc(negative_equity_rank_change_2009_2019)) %>%
   filter(!is.na(negative_equity_rank_change_2009_2019)) %>%
-  datatable(
-    rownames = FALSE,
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)
-  )
-  )
-
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'places that improved dramatically'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 2)))
 
 ```
 
-The opposite is also true. Consider a place like Woodford County, Illinois.  It had one of the lowest rates of negative equity in 2009 (3rd percentile). In 2019, it's in the 96th percentile.
+The opposite is also true. Many places weren't problematic in 2009 that are now. 
 
-```{r}
+Consider a place like Woodford County, Illinois.  
+
+It had one of the lowest rates of negative equity in 2009 (3rd percentile). 
+
+In 2019, it's in the 96th percentile.
+
+*To see the code that makes this table, click "Code" to expand.*
+
+```{r warning=FALSE, message=FALSE}
 
 underwater_county_year_yes_zillow %>%
   filter(pct_negative_equity_y2019 >= 1) %>%
@@ -1246,62 +1707,33 @@ underwater_county_year_yes_zillow %>%
   dplyr::select(state_name, county_name, negative_equity_rank_change_2009_2019, everything()) %>%
   arrange(negative_equity_rank_change_2009_2019) %>%
   filter(!is.na(negative_equity_rank_change_2009_2019)) %>%
-  datatable(
-    rownames = FALSE,
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)
-  )
-  )
+  datatable(class = 'cell-border stripe', rownames = FALSE, caption = htmltools::tags$caption(
+    style = 'caption-side: bottom; text-align: left;',
+    'correlations with pct_neg_equity_2019'
+  ),
+  extensions = 'FixedColumns',
+  options = list(scrollX=TRUE, scrollCollapse=TRUE,fixedColumns = list(leftColumns = 2)))
 
 
 ```
 
-## Loan to Value Buckets
+### Loan to Value Buckets
 
-We have data from 2017 (nothing later) via Zillow that has loan to value buckets for each county and ZIP code.  I'm still working on analyzing this. 
-```{r}
-negative_equity_summary_county %>%
-  datatable(rownames = FALSE,
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)))
-```
-# Filter by zip
-```{r}
-negative_equity_summary_zip %>%
-  datatable(rownames = FALSE,
-    extensions = 'FixedColumns',
-    options = list(
-    pageLength = 50,
-    dom = 't',
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 2)))
+We have data from 2017 (nothing later) via Zillow that has loan to value buckets for each county and ZIP code.  I'm still working on analyzing this.
+
+Here's raw the data for counties.
+
+```{r warning=FALSE, message=FALSE}
+negative_equity_summary_county 
 ```
 
-```{r}
-## Load and clean zillow data from data.world
-#Strategy
-#What are the ramifications of negative equity?
+Here's the raw data for ZIP codes.
 
-#Negative equity can cast a shadow over the economy, effectively prolonging an economic downturn. Just as skyrocketing home values can drive confidence and spending, negative equity can keep people home, literally. Many people who might have found jobs in other markets were tied to their homes and unable to sell because the money they would make from selling would not be enough to pay off their mortgages. Negative equity can have a number of other chilling impacts on local housing markets, disproportionately impacting minority communities and owners of lower-valued homes, exacerbating inventory shortages and increasing the likelihood of foreclosure for underwater homeowners.
-# https://www.zillow.com/research/negative-equity-race-q3-2016-14063/
-# https://www.zillow.com/research/q3-2016-negative-equity-report-13954/
-
-#HOLY SHIT THERE S A FUCKING MODEL ON PAGE 14 that has everything I need. #https://www.frbatlanta.org/-/media/documents/community-development/publications/discussion-papers/2016/01-housing-negative-equity-in-sixth-federal-reserve-district-2016-03-10.pdf
-
-#https://www.zillow.com/research/q3-2016-negative-equity-report-13954/
-#But this drop, while encouraging, masks the often very wide divide that remains between the top of the market and the bottom of the market. In a number of large markets, the spread between the negative equity rate at the top and the bottom of the market is alarmingly wide. In Detroit, for example, the negative equity rate among top-tier homes is 4.4 percent; among bottom-tier homes, the negative equity rate is almost ten times higher at 39 percent – a gap of 34.6 percentage points, the largest gap among the 35 largest metros analyzed. The gap between top-tier and bottom-tier negative equity is more than 20 percentage points in an additional four large metros: Cleveland (28.1 points), St. Louis (22 points), Atlanta (21 points) and Chicago (20.5 points).
-
-
-
+```{r warning=FALSE, message=FALSE}
+negative_equity_summary_zip 
 ```
+
+-30-
 
 
 
